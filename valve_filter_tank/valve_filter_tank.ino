@@ -1,6 +1,16 @@
 #include <Wire.h>
 #include "Adafruit_MCP23008.h"
 
+#include <Arduino.h>
+#include <TM1637Display.h>
+
+// UNO 7 segments display
+#define CLK 9
+#define DIO 8
+
+
+TM1637Display display(CLK, DIO);
+
 // I2C Relayboard test
 // connect VDD to power 5V
 // connect GND to power GND
@@ -27,6 +37,14 @@ byte previous_keystate[NUMBUTTONS], current_keystate[NUMBUTTONS];
 // 1 minute = 60000 ms
 int CLEANDELAY1 = 2000;
 int CLEANDELAY2 = 1000;
+
+// Generally, you should use "unsigned long" for variables that hold time
+// The value will quickly become too large for an int to store
+unsigned long previousMillis = 0;        // will store last time LED was updated
+
+// constants won't change:
+const long interval = 1000;           // interval at which to blink (milliseconds)
+int ledState = LOW;             // ledState used to set the LED
   
 void setup()
 {
@@ -34,6 +52,16 @@ void setup()
 
   // start serial port at 9600 bps and wait for port to open:
   Serial.begin(9600);
+  uint8_t data[] = { 0x00, 0x00, 0x00, 0x00 };
+  display.setSegments(data);
+  display.setBrightness(0x0a);
+
+  data[0] = 0x06;
+  data[1] = 0x54;
+  data[2] = 0x06;
+  data[3] = 0x78;
+
+  display.setSegments(data);
   
   pinMode(ledPin, OUTPUT);
   
@@ -55,6 +83,7 @@ void setup()
   while (!Serial); // wait for serial port to connect. Needed for Leonardo only
   Serial.println("I2C Relayboard test - press keys 12345678 (toggle relay) C (clear all)");
   relay_reset();
+  delay(2000);
 }
 
 void setup_relayboard(int board)
@@ -74,6 +103,35 @@ void setup_relayboard(int board)
 void loop()
 {
   int i;
+  uint8_t data[] = { 0x3f, 0x73, 0x79, 0x50 };
+
+  unsigned long currentMillis = millis();
+  if (currentMillis - previousMillis >= interval) {
+    // save the last time you blinked the LED
+    previousMillis = currentMillis;
+
+    // if the LED is off turn it on and vice-versa:
+    if (ledState == LOW) {
+      data[0] = 0x3f;
+      data[1] = 0x73;
+      data[2] = 0x79;
+      data[3] = 0x50;
+      display.setSegments(data);
+      ledState = HIGH;
+    } else {
+      data[0] = 0x00;
+      data[1] = 0x00;
+      data[2] = 0x00;
+      data[3] = 0x00;
+      display.setSegments(data);
+      ledState = LOW;
+    }
+
+    // set the LED with the ledState of the variable:
+    // digitalWrite(ledPin, ledState);
+  }
+  
+  
   
   byte thisSwitch=thisSwitch_justPressed();
   switch(thisSwitch)
@@ -110,9 +168,10 @@ void loop()
       break;
     case 5: 
       Serial.println("switch 6 just pressed"); break;    
-}
+  }
   
   relay_serial_control();
+  
   
 }
 
@@ -181,18 +240,24 @@ void tank1_clean()
   Serial.println("Reset");
   relay_reset();
   delay(500);
+
+  uint8_t data[] = { 0x78, 0x00, 0x00, 0x00 }; // t
+  display.setSegments(data);
   
+  display.showNumberDecEx(115, (0x80 >> 1), false, 3, 1);
   Serial.println("Tank 1");
   Serial.println("State 1 close valve 1, 5");
   relay_gpio(0b00001001);
   delay(CLEANDELAY1);
-  
+
+  display.showNumberDecEx(123, (0x80 >> 1), false, 3, 1);
   Serial.println("Cleaning start...");      
   Serial.println("State 2 close valve 1,5; open valve 2,3");
   relay_gpio(0b00001011);
   // 5 minute clean
   delay(CLEANDELAY1);
-  
+
+  display.showNumberDecEx(114, (0x80 >> 1), false, 3, 1);
   Serial.println("State 3 close valve 2,3,5; open valve 1,4");
   relay_gpio(0b00001100);
   // 1 minute clean
@@ -206,19 +271,27 @@ void tank1_clean()
 
 void tank2_clean()
 {
+  
+  
   Serial.println("Reset");
   relay_reset();
   delay(500);
+  
+  uint8_t data[] = { 0x78, 0x00, 0x00, 0x00 }; // t
+  display.setSegments(data);
+  display.showNumberDecEx(215, (0x80 >> 1), false, 3, 1);
   Serial.println("Tank 2");
   Serial.println("State 1 close valve 1, 5");
   relay_gpio(0b10010000);
   delay(CLEANDELAY1);
-  
+
+  display.showNumberDecEx(223, (0x80 >> 1), false, 3, 1);
   Serial.println("Cleaning start...");      
   Serial.println("State 2 close valve 1,5; open valve 2,3");
   relay_gpio(0b10110000);
   delay(CLEANDELAY1);
-  
+
+  display.showNumberDecEx(214, (0x80 >> 1), false, 3, 1);
   Serial.println("State 3 close valve 2,3; open valve 1,4");
   relay_gpio(0b11000000);
   // 1 minute clean
@@ -232,21 +305,28 @@ void tank2_clean()
 
 void tank3_clean()
 {
+  
+  
   Serial.println("Reset");
   relay_reset();
   delay(500);
-  
+
+  uint8_t data[] = { 0x78, 0x00, 0x00, 0x00 }; // t
+  display.setSegments(data);
+  display.showNumberDecEx(315, (0x80 >> 1), false, 3, 1);
   Serial.println("Tank 3");
   Serial.println("State 1 close valve 1, 5");
   relay_gpio(0b00001001);
   delay(CLEANDELAY1);
-  
+
+  display.showNumberDecEx(323, (0x80 >> 1), false, 3, 1);
   Serial.println("Cleaning start...");      
   Serial.println("State 2 close valve 1,5; open valve 2,3");
   relay_gpio(0b00001011);
   // 5 minute clean
   delay(CLEANDELAY1);
-  
+
+  display.showNumberDecEx(314, (0x80 >> 1), false, 3, 1);
   Serial.println("State 3 close valve 2,3,5; open valve 1,4");
   relay_gpio(0b00001100);
   // 1 minute clean
@@ -260,19 +340,27 @@ void tank3_clean()
 
 void tank4_clean()
 {
+  
+  
   Serial.println("Reset");
   relay_reset();
   delay(500);
+  
+  uint8_t data[] = { 0x78, 0x00, 0x00, 0x00 }; // t
+  display.setSegments(data);
+  display.showNumberDecEx(415, (0x80 >> 1), false, 3, 1);
   Serial.println("Tank 4");
   Serial.println("State 1 close valve 1, 5");
   relay_gpio(0b10010000);
   delay(CLEANDELAY1);
-  
+
+  display.showNumberDecEx(423, (0x80 >> 1), false, 3, 1);
   Serial.println("Cleaning start...");      
   Serial.println("State 2 close valve 1,5; open valve 2,3");
   relay_gpio(0b10110000);
   delay(CLEANDELAY1);
-  
+
+  display.showNumberDecEx(414, (0x80 >> 1), false, 3, 1);
   Serial.println("State 3 close valve 2,3; open valve 1,4");
   relay_gpio(0b11000000);
   // 1 minute clean
