@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include <TM1637Display.h>
 
-<<<<<<< HEAD
+
 #include "Timer.h"
 
 Timer timer1, timer2, timer3;
@@ -12,9 +12,8 @@ int afterState1 = -1;
 int afterState2 = -1;
 int afterState3 = -1;
 int working = 0;
-=======
-// #define UNO 
->>>>>>> faf450fcea05989a3770b36817e5fa5b401d117d
+
+// #define UNO
 
 // UNO 7 segments display
 // #define CLK 9
@@ -26,7 +25,7 @@ int working = 0;
 #define CLK D3
 #define DIO D4
 int ledPin = D4;
-byte buttons[] = {D0, D5, D6, D7};  // switch 
+byte buttons[] = {D0, D5, D6, D7};  // switch
 
 TM1637Display display(CLK, DIO);
 
@@ -61,12 +60,10 @@ unsigned long previousMillis = 0;        // will store last time LED was updated
 const long interval = 1000;           // interval at which to blink (milliseconds)
 int ledState = LOW;             // ledState used to set the LED
 
-<<<<<<< HEAD
-=======
-// wemos 
+// wemos
 int wemosautostart = 1;
-  
->>>>>>> faf450fcea05989a3770b36817e5fa5b401d117d
+
+
 void setup()
 {
   byte i;
@@ -86,10 +83,8 @@ void setup()
 
   pinMode(ledPin, OUTPUT);
 
-<<<<<<< HEAD
-=======
+
   Serial.println();
->>>>>>> faf450fcea05989a3770b36817e5fa5b401d117d
   Serial.print("Button checker with ");
   Serial.print(NUMBUTTONS, DEC);
   Serial.println(" buttons");
@@ -99,21 +94,13 @@ void setup()
     pinMode(buttons[i], INPUT);
     digitalWrite(buttons[i], HIGH);
   }
-<<<<<<< HEAD
 
-  // mcp.begin(1); // address = 0 (valid: 0-7)
-  setup_relayboard(0);
-
-
-
-=======
   pinMode(D8, INPUT);
   digitalWrite(D8, LOW);
-  
+
   // mcp.begin(1); // address = 0 (valid: 0-7)
   setup_relayboard(0);
-  
->>>>>>> faf450fcea05989a3770b36817e5fa5b401d117d
+
   while (!Serial); // wait for serial port to connect. Needed for Leonardo only
   Serial.println("I2C Relayboard test - press keys 12345678 (toggle relay) C (clear all)");
   relay_reset();
@@ -142,7 +129,7 @@ void loop()
       data[3] = 0x50;
       display.setSegments(data);
       ledState = HIGH;
-      //Serial.println(digitalRead(D8));    // wemos input 
+      //Serial.println(digitalRead(D8));    // wemos input
     } else {
       data[0] = 0x00;
       data[1] = 0x00;
@@ -205,22 +192,21 @@ void loop()
       Serial.println("switch 6 just pressed"); break;
   }
 
-<<<<<<< HEAD
-=======
   // wemos auto start D8 input
   if (digitalRead(D8) == 1 && wemosautostart == 1) {
-    Serial.println("switch 5 just pressed"); 
+    Serial.println("switch 5 just pressed");
     // automatic clean
-    setup_relayboard(0);
-    tank1_clean();
-    tank2_clean();
-    setup_relayboard(1);
-    tank3_clean();
-    tank4_clean();
+    if (working == 0) {
+      setup_relayboard(0);
+      tank1_clean();
+      tank2_clean();
+      setup_relayboard(1);
+      tank3_clean();
+      tank4_clean();
+    }
   }
-  // end wemos auto start 
-  
->>>>>>> faf450fcea05989a3770b36817e5fa5b401d117d
+  // end wemos auto start
+
   relay_serial_control();
 
 
