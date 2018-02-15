@@ -12,6 +12,8 @@ int afterState1 = -1;
 int afterState2 = -1;
 int afterState3 = -1;
 int working = 0;
+boolean automode = false;
+int operation = 0;
 
 // #define UNO
 
@@ -69,7 +71,7 @@ void setup()
   byte i;
 
   // start serial port at 9600 bps and wait for port to open:
-  Serial.begin(9600);
+  Serial.begin(115200);
   uint8_t data[] = { 0x00, 0x00, 0x00, 0x00 };
   display.setSegments(data);
   display.setBrightness(0x0a);
@@ -121,22 +123,24 @@ void loop()
     // save the last time you blinked the LED
     previousMillis = currentMillis;
 
-    // if the LED is off turn it on and vice-versa:
-    if (ledState == LOW) {
-      data[0] = 0x3f;
-      data[1] = 0x73;
-      data[2] = 0x79;
-      data[3] = 0x50;
-      display.setSegments(data);
-      ledState = HIGH;
-      //Serial.println(digitalRead(D8));    // wemos input
-    } else {
-      data[0] = 0x00;
-      data[1] = 0x00;
-      data[2] = 0x00;
-      data[3] = 0x00;
-      display.setSegments(data);
-      ledState = LOW;
+    if(working == 0) {
+      // if the LED is off turn it on and vice-versa:
+      if (ledState == LOW) {
+        data[0] = 0x3f;
+        data[1] = 0x73;
+        data[2] = 0x79;
+        data[3] = 0x50;
+        display.setSegments(data);
+        ledState = HIGH;
+        //Serial.println(digitalRead(D8));    // wemos input
+      } else {
+        data[0] = 0x00;
+        data[1] = 0x00;
+        data[2] = 0x00;
+        data[3] = 0x00;
+        display.setSegments(data);
+        ledState = LOW;
+      }
     }
 
     // set the LED with the ledState of the variable:
@@ -150,6 +154,8 @@ void loop()
   {
     case 0:
       Serial.println("switch 1 just pressed");
+      automode = false;
+      
       setup_relayboard(0);
       if (working == 0) {
         tank1_clean();
@@ -157,6 +163,8 @@ void loop()
       break;
     case 1:
       Serial.println("switch 2 just pressed");
+      automode = false;
+      
       setup_relayboard(0);
       if (working == 0) {
         tank2_clean();
@@ -164,6 +172,8 @@ void loop()
       break;
     case 2:
       Serial.println("switch 3 just pressed");
+      automode = false;
+      
       setup_relayboard(1);
       if(working == 0) {
         tank3_clean();
@@ -171,21 +181,25 @@ void loop()
       break;
     case 3:
       Serial.println("switch 4 just pressed");
+      automode = false;
+      
       setup_relayboard(1);
       if (working == 0) {
         tank4_clean();
       }
       break;
     case 4:
-      Serial.println("switch 5 just pressed");
       // automatic clean
+      Serial.println("switch 5 just pressed");
+      automode = true;      
       if (working == 0) {
         setup_relayboard(0);
+        operation = 1;
         tank1_clean();
-        tank2_clean();
-        setup_relayboard(1);
-        tank3_clean();
-        tank4_clean();
+        // tank2_clean();
+        // setup_relayboard(1);
+        // tank3_clean();
+        // tank4_clean();
       }
       break;
     case 5:
@@ -195,14 +209,17 @@ void loop()
   // wemos auto start D8 input
   if (digitalRead(D8) == 1 && wemosautostart == 1) {
     Serial.println("switch 5 just pressed");
+    automode = true;
+    
     // automatic clean
     if (working == 0) {
       setup_relayboard(0);
+      operation = 1;
       tank1_clean();
-      tank2_clean();
-      setup_relayboard(1);
-      tank3_clean();
-      tank4_clean();
+      // tank2_clean();
+      // setup_relayboard(1);
+      // tank3_clean();
+      // tank4_clean();
     }
   }
   // end wemos auto start
@@ -332,8 +349,25 @@ void tank1_state3()
 
 }
 
+//     a
+//  f     b
+//     g   
+//  e     c
+//     d
+//   0000 0000
+//    gfe dcba
+// n  101 0100
+// d  101 1110
 void tank_state4()
 {
+  uint8_t data[] = { 0x00, 0x00, 0x00, 0x00 };
+  
+  data[0] = 0x79;
+  data[1] = 0x54;
+  data[2] = 0x5E;
+  data[3] = 0x00;
+  display.setSegments(data);
+        
   Serial.println("State 4 cleaning ended.");
   Serial.println();
   relay_reset();
@@ -343,6 +377,22 @@ void tank_state4()
     afterState3 = -1;
   }
   working = 0;
+  if (automode) {
+    if (operation == 1) {
+      tank2_clean();
+      operation = 2;
+    }
+    else if (operation == 2) {
+      setup_relayboard(1);
+      tank3_clean();
+      operation = 3;
+    }
+    else if (operation == 3) {
+      tank4_clean();
+      operation = 0;
+      automode = false;
+    }
+  }
 }
 
 
