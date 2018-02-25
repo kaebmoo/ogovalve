@@ -322,9 +322,11 @@ void stop_timer()
 void tank1_state2()
 {
   display.showNumberDecEx(123, (0x80 >> 1), false, 3, 1);  
-  delay(1000);
+  
   Serial.println("Cleaning start...");
   Serial.println("State 2 close valve 1,5; open valve 2,3");
+  relay_gpio(0b00001001);
+  delay(1000);
   relay_gpio(0b00001011);
   // 5 minute clean
   // delay(CLEANDELAY1);
@@ -338,8 +340,10 @@ void tank1_state2()
 void tank1_state3()
 {
   display.showNumberDecEx(114, (0x80 >> 1), false, 3, 1);
-  delay(1000);
+  
   Serial.println("State 3 close valve 2,3,5; open valve 1,4");
+  relay_gpio(0b00001000);
+  delay(1000);
   relay_gpio(0b00001100);
   // 1 minute clean
   // delay(CLEANDELAY2);
@@ -401,9 +405,11 @@ void tank_state4()
 void tank2_state2()
 {
   display.showNumberDecEx(223, (0x80 >> 1), false, 3, 1);
-  delay(1000);
+  
   Serial.println("Cleaning start...");
   Serial.println("State 2 close valve 1,5; open valve 2,3");
+  relay_gpio(0b10010000);
+  delay(1000);
   relay_gpio(0b10110000);
   // delay(CLEANDELAY1);
   afterState2 = timer2.after(CLEANDELAY1, tank2_state3);
@@ -416,8 +422,10 @@ void tank2_state2()
 void tank2_state3()
 {
   display.showNumberDecEx(214, (0x80 >> 1), false, 3, 1);
-  delay(1000);
+  
   Serial.println("State 3 close valve 2,3; open valve 1,4");
+  relay_gpio(0b10000000);
+  delay(1000);
   relay_gpio(0b11000000);
   // 1 minute clean
   // delay(CLEANDELAY2);
@@ -431,9 +439,11 @@ void tank2_state3()
 void tank3_state2()
 {
   display.showNumberDecEx(323, (0x80 >> 1), false, 3, 1);
-  delay(1000);
+  
   Serial.println("Cleaning start...");
   Serial.println("State 2 close valve 1,5; open valve 2,3");
+  relay_gpio(0b00001001);
+  delay(1000);
   relay_gpio(0b00001011);
   // 5 minute clean
   // delay(CLEANDELAY1);
@@ -447,8 +457,10 @@ void tank3_state2()
 void tank3_state3()
 {
   display.showNumberDecEx(314, (0x80 >> 1), false, 3, 1);
-  delay(1000);
+  
   Serial.println("State 3 close valve 2,3,5; open valve 1,4");
+  relay_gpio(0b00001000);
+  delay(1000);
   relay_gpio(0b00001100);
   // 1 minute clean
   // delay(CLEANDELAY2);
@@ -462,9 +474,11 @@ void tank3_state3()
 void tank4_state2()
 {
   display.showNumberDecEx(423, (0x80 >> 1), false, 3, 1);
-  delay(1000);
+  
   Serial.println("Cleaning start...");
   Serial.println("State 2 close valve 1,5; open valve 2,3");
+  relay_gpio(0b10010000);
+  delay(1000);
   relay_gpio(0b10110000);
   // delay(CLEANDELAY1);
   afterState2 = timer2.after(CLEANDELAY1, tank4_state3);
@@ -477,8 +491,10 @@ void tank4_state2()
 void tank4_state3()
 {
   display.showNumberDecEx(414, (0x80 >> 1), false, 3, 1);
-  delay(1000);
+  
   Serial.println("State 3 close valve 2,3; open valve 1,4");
+  relay_gpio(0b10000000);
+  delay(1000);
   relay_gpio(0b11000000);
   // 1 minute clean
   // delay(CLEANDELAY2);

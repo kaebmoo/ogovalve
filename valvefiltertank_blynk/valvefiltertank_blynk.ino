@@ -21,7 +21,11 @@
 char auth[] = "12345678901234567890abcdefghijkl";
 char c_auth[33] = "";           // authen token blynk
 bool shouldSaveConfig = false;
-
+WidgetLED led_tank1(30);
+WidgetLED led_tank2(31);
+WidgetLED led_tank3(32);
+WidgetLED led_tank4(33);
+WidgetLED led_status(40);
 
 Timer timer1, timer2, timer3;
 int afterState1 = -1;
@@ -67,8 +71,10 @@ byte previous_keystate[NUMBUTTONS], current_keystate[NUMBUTTONS];
 
 // 5 minutes = 300000 ms
 // 1 minute = 60000 ms
-int CLEANDELAY1 = 10000;
-int CLEANDELAY2 = 5000;
+int CLEANDELAY0 = 500;
+int CLEANDELAY1 = 300000;
+int CLEANDELAY2 = 60000;
+int DELAYSTATE = 10000;
 
 // Generally, you should use "unsigned long" for variables that hold time
 // The value will quickly become too large for an int to store
@@ -80,6 +86,8 @@ int ledState = LOW;             // ledState used to set the LED
 
 // wemos
 int wemosautostart = 1;
+
+int wifi_connected = 1;
 
 
 void setup()
@@ -123,6 +131,28 @@ void setup()
   Serial.println("I2C Relayboard test - press keys 12345678 (toggle relay) C (clear all)");
   relay_reset();
   delay(2000);
+
+  wifi_connected = setup_wifi();
+  if (wifi_connected == 0) {
+    delay(500);
+    Blynk.config(auth);  // in place of Blynk.begin(auth, ssid, pass);
+    Serial.print("Blynk connecting : ");
+    boolean result = Blynk.connect(3333);  // timeout set to 10 seconds and then continue without Blynk, 3333 is 10 seconds because Blynk.connect is in 3ms units.  
+    Serial.println(result);
+    if(!Blynk.connected()){
+      Serial.println("Not connected to Blynk server"); 
+      Blynk.connect(3333);  // try to connect to server with default timeout
+    }
+    else {
+      Serial.println("Connected to Blynk server");     
+    }
+    
+  } 
+  else {
+    Serial.println("WiFi not connect");
+  }
+   
+  
 }
 
 void loop()
@@ -130,6 +160,10 @@ void loop()
   int i;
   uint8_t data[] = { 0x3f, 0x73, 0x79, 0x50 };
 
+  if (wifi_connected == 0) {
+    Blynk.run();  
+  }
+  
   timer1.update();
   timer2.update();
   timer3.update();
@@ -148,6 +182,7 @@ void loop()
         data[3] = 0x50;
         display.setSegments(data);
         ledState = HIGH;
+        led_status.on();
         //Serial.println(digitalRead(D8));    // wemos input
       } else {
         data[0] = 0x00;
@@ -156,7 +191,11 @@ void loop()
         data[3] = 0x00;
         display.setSegments(data);
         ledState = LOW;
+        led_status.off();
       }
+    }
+    else {
+      led_status.on();
     }
 
     // set the LED with the ledState of the variable:
@@ -245,7 +284,7 @@ void loop()
 
 }
 
-void setup_wifi() {
+int setup_wifi() {
 
   WiFiManager wifiManager;
   String APName;
@@ -269,10 +308,11 @@ void setup_wifi() {
   APName = "OgoControl-"+String(ESP.getChipId());
   if(!wifiManager.autoConnect(APName.c_str()) ) {
     Serial.println("failed to connect and hit timeout");
-    delay(3000);
-    //reset and try again, or maybe put it to deep sleep
-    ESP.reset();
-    delay(5000);
+    delay(1000);
+    // reset and try again, or maybe put it to deep sleep
+    // ESP.reset();    
+    // delay(5000);
+    return -1;
   }
 
   //if you get here you have connected to the WiFi
@@ -292,6 +332,8 @@ void setup_wifi() {
     Serial.println(auth);
     writeEEPROM(auth, 60, 32);
   }
+
+  return 0;
 }
 
 //callback notifying us of the need to save config
@@ -411,9 +453,11 @@ void stop_timer()
 void tank1_state2()
 {
   display.showNumberDecEx(123, (0x80 >> 1), false, 3, 1);
-  delay(1000);
+  
   Serial.println("Cleaning start...");
   Serial.println("State 2 close valve 1,5; open valve 2,3");
+  relay_gpio(0b00001001);
+  delay(DELAYSTATE);
   relay_gpio(0b00001011);
   // 5 minute clean
   // delay(CLEANDELAY1);
@@ -427,8 +471,10 @@ void tank1_state2()
 void tank1_state3()
 {
   display.showNumberDecEx(114, (0x80 >> 1), false, 3, 1);
-  delay(1000);
+  
   Serial.println("State 3 close valve 2,3,5; open valve 1,4");
+  relay_gpio(0b00001000);
+  delay(DELAYSTATE);
   relay_gpio(0b00001100);
   // 1 minute clean
   // delay(CLEANDELAY2);
@@ -462,7 +508,12 @@ void tank_state4()
   Serial.println("State 4 cleaning ended.");
   Serial.println();
   relay_reset();
-  delay(500);
+  delay(DELAYSTATE);
+  led_tank1.off();
+  led_tank2.off();
+  led_tank3.off();
+  led_tank4.off();
+  
   if (afterState3 != -1) {
     timer3.stop(afterState3);
     afterState3 = -1;
@@ -484,15 +535,18 @@ void tank_state4()
       automode = false;
     }
   }
+  
 }
 
 
 void tank2_state2()
 {
   display.showNumberDecEx(223, (0x80 >> 1), false, 3, 1);
-  delay(1000);
+  
   Serial.println("Cleaning start...");
   Serial.println("State 2 close valve 1,5; open valve 2,3");
+  relay_gpio(0b10010000);
+  delay(DELAYSTATE);
   relay_gpio(0b10110000);
   // delay(CLEANDELAY1);
   afterState2 = timer2.after(CLEANDELAY1, tank2_state3);
@@ -505,8 +559,10 @@ void tank2_state2()
 void tank2_state3()
 {
   display.showNumberDecEx(214, (0x80 >> 1), false, 3, 1);
-  delay(1000);
+  
   Serial.println("State 3 close valve 2,3; open valve 1,4");
+  relay_gpio(0b10000000);
+  delay(DELAYSTATE);
   relay_gpio(0b11000000);
   // 1 minute clean
   // delay(CLEANDELAY2);
@@ -520,9 +576,11 @@ void tank2_state3()
 void tank3_state2()
 {
   display.showNumberDecEx(323, (0x80 >> 1), false, 3, 1);
-  delay(1000);
+  
   Serial.println("Cleaning start...");
   Serial.println("State 2 close valve 1,5; open valve 2,3");
+  relay_gpio(0b00001001);
+  delay(DELAYSTATE);
   relay_gpio(0b00001011);
   // 5 minute clean
   // delay(CLEANDELAY1);
@@ -536,8 +594,10 @@ void tank3_state2()
 void tank3_state3()
 {
   display.showNumberDecEx(314, (0x80 >> 1), false, 3, 1);
-  delay(1000);
+  
   Serial.println("State 3 close valve 2,3,5; open valve 1,4");
+  relay_gpio(0b00001000);
+  delay(DELAYSTATE);
   relay_gpio(0b00001100);
   // 1 minute clean
   // delay(CLEANDELAY2);
@@ -551,9 +611,11 @@ void tank3_state3()
 void tank4_state2()
 {
   display.showNumberDecEx(423, (0x80 >> 1), false, 3, 1);
-  delay(1000);
+  
   Serial.println("Cleaning start...");
   Serial.println("State 2 close valve 1,5; open valve 2,3");
+  relay_gpio(0b10010000);
+  delay(DELAYSTATE);
   relay_gpio(0b10110000);
   // delay(CLEANDELAY1);
   afterState2 = timer2.after(CLEANDELAY1, tank4_state3);
@@ -566,8 +628,10 @@ void tank4_state2()
 void tank4_state3()
 {
   display.showNumberDecEx(414, (0x80 >> 1), false, 3, 1);
-  delay(1000);
+  
   Serial.println("State 3 close valve 2,3; open valve 1,4");
+  relay_gpio(0b10000000);
+  delay(DELAYSTATE);
   relay_gpio(0b11000000);
   // 1 minute clean
   // delay(CLEANDELAY2);
@@ -586,13 +650,17 @@ void tank1_clean()
   
   Serial.println("Reset");
   relay_reset();
-  delay(500);
+  delay(DELAYSTATE);
   Serial.println("Tank 1");
   Serial.println("State 1 close valve 1, 5");
   relay_gpio(0b00001001);
   working = 1;
-  // delay(CLEANDELAY1);
-  afterState1 = timer1.after(CLEANDELAY1, tank1_state2);
+  delay(DELAYSTATE);
+  afterState1 = timer1.after(CLEANDELAY0, tank1_state2);
+  led_tank1.on();
+  led_tank2.off();
+  led_tank3.off();
+  led_tank4.off();
 
 }
 
@@ -605,13 +673,17 @@ void tank2_clean()
 
   Serial.println("Reset");
   relay_reset();
-  delay(500);
+  
   Serial.println("Tank 2");
   Serial.println("State 1 close valve 1, 5");
   relay_gpio(0b10010000);
   working = 1;
-  // delay(CLEANDELAY1);
-  afterState1 = timer1.after(CLEANDELAY1, tank2_state2);
+  delay(DELAYSTATE);
+  afterState1 = timer1.after(CLEANDELAY0, tank2_state2);
+  led_tank1.off();
+  led_tank2.on();
+  led_tank3.off();
+  led_tank4.off();
 
 }
 
@@ -623,13 +695,17 @@ void tank3_clean()
 
   Serial.println("Reset");
   relay_reset();
-  delay(500);
+  
   Serial.println("Tank 3");
   Serial.println("State 1 close valve 1, 5");
   relay_gpio(0b00001001);
   working = 1;
-  // delay(CLEANDELAY1);
-  afterState1 = timer1.after(CLEANDELAY1, tank3_state2);
+  delay(DELAYSTATE);
+  afterState1 = timer1.after(CLEANDELAY0, tank3_state2);
+  led_tank1.off();
+  led_tank2.off();
+  led_tank3.on();
+  led_tank4.off();
 }
 
 void tank4_clean()
@@ -640,13 +716,17 @@ void tank4_clean()
   
   Serial.println("Reset");
   relay_reset();
-  delay(500);
+  
   Serial.println("Tank 4");
   Serial.println("State 1 close valve 1, 5");
   relay_gpio(0b10010000);
   working = 1;
-  // delay(CLEANDELAY1);
-  afterState1 = timer1.after(CLEANDELAY1, tank4_state2);
+  delay(DELAYSTATE);
+  afterState1 = timer1.after(CLEANDELAY0, tank4_state2);
+  led_tank1.off();
+  led_tank2.off();
+  led_tank3.off();
+  led_tank4.on();
 
 }
 
