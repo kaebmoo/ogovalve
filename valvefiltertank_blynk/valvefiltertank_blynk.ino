@@ -1,3 +1,11 @@
+#include "ESP8266WiFi.h"
+#include <BlynkSimpleEsp8266.h>
+#include <EEPROM.h>
+#include <DNSServer.h>            //Local DNS Server used for redirecting all requests to the configuration portal
+#include <ESP8266WebServer.h>     //Local WebServer used to serve the configuration portal
+#include <WiFiManager.h>          //https://github.com/tzapu/WiFiManager WiFi Configuration Magic
+
+
 #include <Wire.h>
 #include "Adafruit_MCP23008.h"
 
@@ -6,6 +14,14 @@
 
 
 #include "Timer.h"
+
+// internet control
+// You should get Auth Token in the Blynk App.
+// Go to the Project Settings (nut icon).
+char auth[] = "12345678901234567890abcdefghijkl";
+char c_auth[33] = "";           // authen token blynk
+bool shouldSaveConfig = false;
+
 
 Timer timer1, timer2, timer3;
 int afterState1 = -1;
@@ -229,6 +245,79 @@ void loop()
 
 }
 
+void setup_wifi() {
+
+  WiFiManager wifiManager;
+  String APName;
+
+  EEPROM.begin(512);
+  readEEPROM(auth, 60, 32);
+  Serial.print("auth token : ");
+  Serial.println(auth);
+  WiFiManagerParameter custom_c_auth("c_auth", "Auth Token", c_auth, 37);
+  wifiManager.setSaveConfigCallback(saveConfigCallback);
+  wifiManager.addParameter(&custom_c_auth);
+
+
+  delay(100);
+  //sets timeout until configuration portal gets turned off
+  //useful to make it all retry or go to sleep
+  //in seconds
+  wifiManager.setTimeout(300);
+
+
+  APName = "OgoControl-"+String(ESP.getChipId());
+  if(!wifiManager.autoConnect(APName.c_str()) ) {
+    Serial.println("failed to connect and hit timeout");
+    delay(3000);
+    //reset and try again, or maybe put it to deep sleep
+    ESP.reset();
+    delay(5000);
+  }
+
+  //if you get here you have connected to the WiFi
+  Serial.println("connected...yeey :)");
+
+
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+
+  if (shouldSaveConfig) {
+    strcpy(c_auth, custom_c_auth.getValue());
+    strcpy(auth, c_auth);
+    Serial.print("auth token : ");
+    Serial.println(auth);
+    writeEEPROM(auth, 60, 32);
+  }
+}
+
+//callback notifying us of the need to save config
+void saveConfigCallback () {
+  Serial.println("Should save config");
+  shouldSaveConfig = true;
+}
+
+void readEEPROM(char* buff, int offset, int len) {
+    int i;
+    for (i=0;i<len;i++) {
+        buff[i] = (char)EEPROM.read(offset+i);
+    }
+    buff[len] = '\0';
+}
+
+void writeEEPROM(char* buff, int offset, int len) {
+    int i;
+    for (i=0;i<len;i++) {
+        EEPROM.write(offset+i,buff[i]);
+    }
+    EEPROM.commit();
+}
+
+
+
 void setup_relayboard(int board)
 {
   mcp.begin(board);
@@ -321,7 +410,7 @@ void stop_timer()
 
 void tank1_state2()
 {
-  display.showNumberDecEx(123, (0x80 >> 1), false, 3, 1);  
+  display.showNumberDecEx(123, (0x80 >> 1), false, 3, 1);
   delay(1000);
   Serial.println("Cleaning start...");
   Serial.println("State 2 close valve 1,5; open valve 2,3");
@@ -491,11 +580,10 @@ void tank4_state3()
 
 void tank1_clean()
 {
-  
   uint8_t data[] = { 0x78, 0x00, 0x00, 0x00 }; // t
   display.setSegments(data);
   display.showNumberDecEx(115, (0x80 >> 1), false, 3, 1);
-
+  
   Serial.println("Reset");
   relay_reset();
   delay(500);
@@ -510,7 +598,7 @@ void tank1_clean()
 
 
 void tank2_clean()
-{ 
+{
   uint8_t data[] = { 0x78, 0x00, 0x00, 0x00 }; // t
   display.setSegments(data);
   display.showNumberDecEx(215, (0x80 >> 1), false, 3, 1);
@@ -549,7 +637,7 @@ void tank4_clean()
   uint8_t data[] = { 0x78, 0x00, 0x00, 0x00 }; // t
   display.setSegments(data);
   display.showNumberDecEx(415, (0x80 >> 1), false, 3, 1);
-
+  
   Serial.println("Reset");
   relay_reset();
   delay(500);
@@ -670,4 +758,99 @@ void relay_serial_control()
     Serial.println();
   }
 
+}
+
+BLYNK_WRITE(V1)
+{
+  int pinValue = param.asInt();
+
+  Serial.println(pinValue);
+  if (pinValue == 1) {
+    Serial.println("switch 1 just pressed");
+    automode = false;
+    
+    setup_relayboard(0);
+    if (working == 0) {
+      tank1_clean();
+    }
+  }
+  
+}
+
+BLYNK_WRITE(V2)
+{
+  int pinValue = param.asInt();
+
+  Serial.println(pinValue);
+  if (pinValue == 1) {
+    Serial.println("switch 2 just pressed");
+    automode = false;
+    
+    setup_relayboard(0);
+    if (working == 0) {
+      tank2_clean();
+    }
+  }
+}
+
+BLYNK_WRITE(V3)
+{
+  int pinValue = param.asInt();
+
+  Serial.println(pinValue);
+  if (pinValue == 1) {
+    Serial.println("switch 3 just pressed");
+    automode = false;
+    
+    setup_relayboard(1);
+    if(working == 0) {
+      tank3_clean();
+    }
+  }
+}
+
+BLYNK_WRITE(V4)
+{
+  int pinValue = param.asInt();
+
+  Serial.println(pinValue);
+  if (pinValue == 1) {
+    Serial.println("switch 4 just pressed");
+    automode = false;
+    
+    setup_relayboard(1);
+    if (working == 0) {
+      tank4_clean();
+    }
+  }
+}
+
+BLYNK_WRITE(V10)
+{
+  int pinValue = param.asInt();
+
+  Serial.println(pinValue);
+  if (pinValue == 1) {
+    // automatic clean
+    Serial.println("switch 5 just pressed");
+    automode = true;      
+    if (working == 0) {
+      setup_relayboard(0);
+      operation = 1;
+      tank1_clean();
+    }
+  }
+}
+
+
+BLYNK_WRITE(V20)
+{
+  int pinValue = param.asInt();
+
+  Serial.println(pinValue);
+  if (pinValue == 1) {
+    delay(500);
+    ESP.reset();
+    delay(5000);
+  }
 }
