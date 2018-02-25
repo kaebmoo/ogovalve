@@ -145,6 +145,10 @@ void setup()
     }
     else {
       Serial.println("Connected to Blynk server");     
+      led_tank1.off();
+      led_tank2.off();
+      led_tank3.off();
+      led_tank4.off();
     }
     
   } 
@@ -458,6 +462,9 @@ void tank1_state2()
   Serial.println("State 2 close valve 1,5; open valve 2,3");
   relay_gpio(0b00001001);
   delay(DELAYSTATE);
+  if (wifi_connected == 0) {
+    Blynk.run();  
+  }
   relay_gpio(0b00001011);
   // 5 minute clean
   // delay(CLEANDELAY1);
@@ -475,6 +482,9 @@ void tank1_state3()
   Serial.println("State 3 close valve 2,3,5; open valve 1,4");
   relay_gpio(0b00001000);
   delay(DELAYSTATE);
+  if (wifi_connected == 0) {
+    Blynk.run();  
+  }
   relay_gpio(0b00001100);
   // 1 minute clean
   // delay(CLEANDELAY2);
@@ -509,6 +519,9 @@ void tank_state4()
   Serial.println();
   relay_reset();
   delay(DELAYSTATE);
+  if (wifi_connected == 0) {
+    Blynk.run();  
+  }
   led_tank1.off();
   led_tank2.off();
   led_tank3.off();
@@ -547,6 +560,9 @@ void tank2_state2()
   Serial.println("State 2 close valve 1,5; open valve 2,3");
   relay_gpio(0b10010000);
   delay(DELAYSTATE);
+  if (wifi_connected == 0) {
+    Blynk.run();  
+  }
   relay_gpio(0b10110000);
   // delay(CLEANDELAY1);
   afterState2 = timer2.after(CLEANDELAY1, tank2_state3);
@@ -563,6 +579,9 @@ void tank2_state3()
   Serial.println("State 3 close valve 2,3; open valve 1,4");
   relay_gpio(0b10000000);
   delay(DELAYSTATE);
+  if (wifi_connected == 0) {
+    Blynk.run();  
+  }
   relay_gpio(0b11000000);
   // 1 minute clean
   // delay(CLEANDELAY2);
@@ -581,6 +600,9 @@ void tank3_state2()
   Serial.println("State 2 close valve 1,5; open valve 2,3");
   relay_gpio(0b00001001);
   delay(DELAYSTATE);
+  if (wifi_connected == 0) {
+    Blynk.run();  
+  }
   relay_gpio(0b00001011);
   // 5 minute clean
   // delay(CLEANDELAY1);
@@ -598,6 +620,9 @@ void tank3_state3()
   Serial.println("State 3 close valve 2,3,5; open valve 1,4");
   relay_gpio(0b00001000);
   delay(DELAYSTATE);
+  if (wifi_connected == 0) {
+    Blynk.run();  
+  }
   relay_gpio(0b00001100);
   // 1 minute clean
   // delay(CLEANDELAY2);
@@ -616,6 +641,9 @@ void tank4_state2()
   Serial.println("State 2 close valve 1,5; open valve 2,3");
   relay_gpio(0b10010000);
   delay(DELAYSTATE);
+  if (wifi_connected == 0) {
+    Blynk.run();  
+  }
   relay_gpio(0b10110000);
   // delay(CLEANDELAY1);
   afterState2 = timer2.after(CLEANDELAY1, tank4_state3);
@@ -632,6 +660,9 @@ void tank4_state3()
   Serial.println("State 3 close valve 2,3; open valve 1,4");
   relay_gpio(0b10000000);
   delay(DELAYSTATE);
+  if (wifi_connected == 0) {
+    Blynk.run();  
+  }
   relay_gpio(0b11000000);
   // 1 minute clean
   // delay(CLEANDELAY2);
@@ -650,13 +681,17 @@ void tank1_clean()
   
   Serial.println("Reset");
   relay_reset();
-  delay(DELAYSTATE);
+  
   Serial.println("Tank 1");
   Serial.println("State 1 close valve 1, 5");
   relay_gpio(0b00001001);
   working = 1;
   delay(DELAYSTATE);
+  if (wifi_connected == 0) {
+    Blynk.run();  
+  }
   afterState1 = timer1.after(CLEANDELAY0, tank1_state2);
+  
   led_tank1.on();
   led_tank2.off();
   led_tank3.off();
@@ -679,7 +714,11 @@ void tank2_clean()
   relay_gpio(0b10010000);
   working = 1;
   delay(DELAYSTATE);
+  if (wifi_connected == 0) {
+    Blynk.run();  
+  }
   afterState1 = timer1.after(CLEANDELAY0, tank2_state2);
+  
   led_tank1.off();
   led_tank2.on();
   led_tank3.off();
@@ -701,7 +740,11 @@ void tank3_clean()
   relay_gpio(0b00001001);
   working = 1;
   delay(DELAYSTATE);
+  if (wifi_connected == 0) {
+    Blynk.run();  
+  }
   afterState1 = timer1.after(CLEANDELAY0, tank3_state2);
+  
   led_tank1.off();
   led_tank2.off();
   led_tank3.on();
@@ -722,7 +765,11 @@ void tank4_clean()
   relay_gpio(0b10010000);
   working = 1;
   delay(DELAYSTATE);
+  if (wifi_connected == 0) {
+    Blynk.run();  
+  }
   afterState1 = timer1.after(CLEANDELAY0, tank4_state2);
+  
   led_tank1.off();
   led_tank2.off();
   led_tank3.off();
