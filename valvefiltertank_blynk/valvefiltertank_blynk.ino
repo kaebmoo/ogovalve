@@ -74,7 +74,7 @@ byte previous_keystate[NUMBUTTONS], current_keystate[NUMBUTTONS];
 int CLEANDELAY0 = 500;
 int CLEANDELAY1 = 300000;
 int CLEANDELAY2 = 60000;
-int DELAYSTATE = 10000;
+int DELAYSTATE = 5000;
 
 // Generally, you should use "unsigned long" for variables that hold time
 // The value will quickly become too large for an int to store
