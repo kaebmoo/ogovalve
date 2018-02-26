@@ -51,6 +51,7 @@ byte previous_keystate[NUMBUTTONS], current_keystate[NUMBUTTONS];
 
 // 5 minutes = 300000 ms
 // 1 minute = 60000 ms
+int CLEANDELAY0 = 500;
 int CLEANDELAY1 = 10000;
 int CLEANDELAY2 = 5000;
 
@@ -155,7 +156,7 @@ void loop()
     case 0:
       Serial.println("switch 1 just pressed");
       automode = false;
-      
+
       setup_relayboard(0);
       if (working == 0) {
         tank1_clean();
@@ -164,7 +165,7 @@ void loop()
     case 1:
       Serial.println("switch 2 just pressed");
       automode = false;
-      
+
       setup_relayboard(0);
       if (working == 0) {
         tank2_clean();
@@ -173,7 +174,7 @@ void loop()
     case 2:
       Serial.println("switch 3 just pressed");
       automode = false;
-      
+
       setup_relayboard(1);
       if(working == 0) {
         tank3_clean();
@@ -182,7 +183,7 @@ void loop()
     case 3:
       Serial.println("switch 4 just pressed");
       automode = false;
-      
+
       setup_relayboard(1);
       if (working == 0) {
         tank4_clean();
@@ -191,7 +192,7 @@ void loop()
     case 4:
       // automatic clean
       Serial.println("switch 5 just pressed");
-      automode = true;      
+      automode = true;
       if (working == 0) {
         setup_relayboard(0);
         operation = 1;
@@ -210,7 +211,7 @@ void loop()
   if (digitalRead(D8) == 1 && wemosautostart == 1) {
     Serial.println("switch 5 just pressed");
     automode = true;
-    
+
     // automatic clean
     if (working == 0) {
       setup_relayboard(0);
@@ -242,6 +243,9 @@ void setup_relayboard(int board)
   mcp.pinMode(6, OUTPUT);
   mcp.pinMode(7, OUTPUT);
 }
+
+// debounce switch
+// https://gist.githubusercontent.com/smching/7df5cce818a1aab3cbc3/raw/268e1968ed13a35999002a116ecd5e6eae835fd4/debounce2.ino
 
 byte thisSwitch_justPressed() {
   byte thisSwitch = 255;
@@ -321,8 +325,8 @@ void stop_timer()
 
 void tank1_state2()
 {
-  display.showNumberDecEx(123, (0x80 >> 1), false, 3, 1);  
-  
+  display.showNumberDecEx(123, (0x80 >> 1), false, 3, 1);
+
   Serial.println("Cleaning start...");
   Serial.println("State 2 close valve 1,5; open valve 2,3");
   relay_gpio(0b00001001);
@@ -340,7 +344,7 @@ void tank1_state2()
 void tank1_state3()
 {
   display.showNumberDecEx(114, (0x80 >> 1), false, 3, 1);
-  
+
   Serial.println("State 3 close valve 2,3,5; open valve 1,4");
   relay_gpio(0b00001000);
   delay(1000);
@@ -357,7 +361,7 @@ void tank1_state3()
 
 //     a
 //  f     b
-//     g   
+//     g
 //  e     c
 //     d
 //   0000 0000
@@ -367,13 +371,13 @@ void tank1_state3()
 void tank_state4()
 {
   uint8_t data[] = { 0x00, 0x00, 0x00, 0x00 };
-  
+
   data[0] = 0x79;
   data[1] = 0x54;
   data[2] = 0x5E;
   data[3] = 0x00;
   display.setSegments(data);
-        
+
   Serial.println("State 4 cleaning ended.");
   Serial.println();
   relay_reset();
@@ -405,7 +409,7 @@ void tank_state4()
 void tank2_state2()
 {
   display.showNumberDecEx(223, (0x80 >> 1), false, 3, 1);
-  
+
   Serial.println("Cleaning start...");
   Serial.println("State 2 close valve 1,5; open valve 2,3");
   relay_gpio(0b10010000);
@@ -422,7 +426,7 @@ void tank2_state2()
 void tank2_state3()
 {
   display.showNumberDecEx(214, (0x80 >> 1), false, 3, 1);
-  
+
   Serial.println("State 3 close valve 2,3; open valve 1,4");
   relay_gpio(0b10000000);
   delay(1000);
@@ -439,7 +443,7 @@ void tank2_state3()
 void tank3_state2()
 {
   display.showNumberDecEx(323, (0x80 >> 1), false, 3, 1);
-  
+
   Serial.println("Cleaning start...");
   Serial.println("State 2 close valve 1,5; open valve 2,3");
   relay_gpio(0b00001001);
@@ -457,7 +461,7 @@ void tank3_state2()
 void tank3_state3()
 {
   display.showNumberDecEx(314, (0x80 >> 1), false, 3, 1);
-  
+
   Serial.println("State 3 close valve 2,3,5; open valve 1,4");
   relay_gpio(0b00001000);
   delay(1000);
@@ -474,7 +478,7 @@ void tank3_state3()
 void tank4_state2()
 {
   display.showNumberDecEx(423, (0x80 >> 1), false, 3, 1);
-  
+
   Serial.println("Cleaning start...");
   Serial.println("State 2 close valve 1,5; open valve 2,3");
   relay_gpio(0b10010000);
@@ -491,7 +495,7 @@ void tank4_state2()
 void tank4_state3()
 {
   display.showNumberDecEx(414, (0x80 >> 1), false, 3, 1);
-  
+
   Serial.println("State 3 close valve 2,3; open valve 1,4");
   relay_gpio(0b10000000);
   delay(1000);
@@ -507,7 +511,7 @@ void tank4_state3()
 
 void tank1_clean()
 {
-  
+
   uint8_t data[] = { 0x78, 0x00, 0x00, 0x00 }; // t
   display.setSegments(data);
   display.showNumberDecEx(115, (0x80 >> 1), false, 3, 1);
@@ -520,13 +524,13 @@ void tank1_clean()
   relay_gpio(0b00001001);
   working = 1;
   // delay(CLEANDELAY1);
-  afterState1 = timer1.after(CLEANDELAY1, tank1_state2);
+  afterState1 = timer1.after(CLEANDELAY0, tank1_state2);
 
 }
 
 
 void tank2_clean()
-{ 
+{
   uint8_t data[] = { 0x78, 0x00, 0x00, 0x00 }; // t
   display.setSegments(data);
   display.showNumberDecEx(215, (0x80 >> 1), false, 3, 1);
@@ -539,7 +543,7 @@ void tank2_clean()
   relay_gpio(0b10010000);
   working = 1;
   // delay(CLEANDELAY1);
-  afterState1 = timer1.after(CLEANDELAY1, tank2_state2);
+  afterState1 = timer1.after(CLEANDELAY0, tank2_state2);
 
 }
 
@@ -557,7 +561,7 @@ void tank3_clean()
   relay_gpio(0b00001001);
   working = 1;
   // delay(CLEANDELAY1);
-  afterState1 = timer1.after(CLEANDELAY1, tank3_state2);
+  afterState1 = timer1.after(CLEANDELAY0, tank3_state2);
 }
 
 void tank4_clean()
@@ -574,7 +578,7 @@ void tank4_clean()
   relay_gpio(0b10010000);
   working = 1;
   // delay(CLEANDELAY1);
-  afterState1 = timer1.after(CLEANDELAY1, tank4_state2);
+  afterState1 = timer1.after(CLEANDELAY0, tank4_state2);
 
 }
 
