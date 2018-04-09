@@ -22,6 +22,11 @@
 #include <ESP8266HTTPClient.h>
 #include <ESP8266httpUpdate.h>
 
+#include <Adafruit_NeoPixel.h>
+
+#define PIN            D2
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(1, PIN, NEO_GRB + NEO_KHZ800);
+
 const int FW_VERSION = 1; // 20180326
 const char* LASTUPDATE = "1.20180403";
 const char* firmwareUrlBase = "http://www.ogonan.com/ogoupdate/";
@@ -152,6 +157,8 @@ void setup()
 
   display.setSegments(data);
 
+  pixels.begin(); // This initializes the NeoPixel library.
+  
   pinMode(ledPin, OUTPUT);
   Serial.println();
 
@@ -244,6 +251,20 @@ void loop()
 
     // set the LED with the ledState of the variable:
     // digitalWrite(ledPin, ledState);
+  }
+
+  // pixels.Color takes RGB values, from 0,0,0 up to 255,255,255
+  for (int i = 0; i < 2; i++) {
+    for (int j = 0; j < 2; j++) {
+      for (int k = 0; k < 2; k++) {
+
+        pixels.setPixelColor(0, pixels.Color(i * 255, j * 255, k * 255)); // Moderately bright green color.
+
+        pixels.show(); // This sends the updated pixel color to the hardware.
+
+        delay(200); // Delay for a period of time (in milliseconds).
+      }
+    }
   }
 
 }
