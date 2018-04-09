@@ -45,13 +45,16 @@ WidgetLED led_tank4(33);
 WidgetLED led_status(40);
 WidgetRTC rtc;
 
-Timer timer1, timer2, timer3, timer4;
+BlynkTimer checkConnectionTimer;
+Timer timer1, timer2, timer3, timer4, timer_display, timer_sequence;
+int sequence_id = -1;
 int afterState1 = -1;
 int afterState2 = -1;
 int afterState3 = -1;
 int working = 0;
 boolean automode = false;
 int operation = 0;
+bool blynkConnectedResult = false;
 
 boolean schedule = false;
 
@@ -158,6 +161,7 @@ void setup()
   display.setSegments(data);
 
   pixels.begin(); // This initializes the NeoPixel library.
+  pixels.setBrightness(64);
   
   pinMode(ledPin, OUTPUT);
   Serial.println();
@@ -198,16 +202,20 @@ void setup()
   timer2.every(1000L, checkvalidtime2);
   timer3.every(1000L, checkvalidtime3);
   timer4.every(1000L, checkvalidtime4);
+  // timer_display.every(1000L, display_zone1, 1);
 
   upintheair();
+  checkConnectionTimer.setInterval(15000L, checkBlynkConnection);
+  display_zone1();
 }
 
 void loop()
 {
-  int i;
+  int i, blynk_connection;
   uint8_t data[] = { 0x3f, 0x73, 0x79, 0x50 };
 
-  if (wifi_connected == 0) {
+  blynk_connection = Blynk.connected();
+  if (blynk_connection) {
     Blynk.run();
   }
 
@@ -215,6 +223,10 @@ void loop()
   timer2.update();
   timer3.update();
   timer4.update();
+  // timer_display.update();
+  timer_sequence.update();
+  checkConnectionTimer.run();
+  
   Alarm.delay(0);
   currenttime = (unsigned long) now();
   
@@ -224,7 +236,9 @@ void loop()
     // save the last time you blinked the LED
     previousMillis = currentMillis;
 
-    if(working == 0) {
+    
+
+    if(!ON1 && !ON2 && !ON3 && !ON4) {
       // if the LED is off turn it on and vice-versa:
       if (ledState == LOW) {
         data[0] = 0x3f;
@@ -235,6 +249,15 @@ void loop()
         ledState = HIGH;
         // led_status.on();
         //Serial.println(digitalRead(D8));    // wemos input
+
+        if (blynk_connection) {
+          pixels.setPixelColor(0, 255, 0, 0); // red #FF0000
+        }
+        else {
+          pixels.setPixelColor(0, 255, 165, 0); // orange #FFA500
+        }
+        pixels.show();
+        
       } else {
         data[0] = 0x00;
         data[1] = 0x00;
@@ -243,31 +266,118 @@ void loop()
         display.setSegments(data);
         ledState = LOW;
         // led_status.off();
+
+        pixels.setPixelColor(0, 0, 0, 0);
+        pixels.show();        
       }
     }
     else {
-      // led_status.on();
+      // led_status.on();      
     }
 
     // set the LED with the ledState of the variable:
     // digitalWrite(ledPin, ledState);
   }
 
-  // pixels.Color takes RGB values, from 0,0,0 up to 255,255,255
-  for (int i = 0; i < 2; i++) {
-    for (int j = 0; j < 2; j++) {
-      for (int k = 0; k < 2; k++) {
-
-        pixels.setPixelColor(0, pixels.Color(i * 255, j * 255, k * 255)); // Moderately bright green color.
-
-        pixels.show(); // This sends the updated pixel color to the hardware.
-
-        delay(200); // Delay for a period of time (in milliseconds).
-      }
-    }
-  }
-
 }
+
+void display_zone1()
+{
+  // if(sequence_id != -1) {
+  //   timer_sequence.stop(sequence_id);
+  // }
+  if(ON1) {
+    pixels.setPixelColor(0, 255, 20, 147); // deep pink #FF1493
+    pixels.show();    
+    sequence_id = timer_sequence.after(1000L, display_zone2);
+  }
+  else {
+    pixels.setPixelColor(0, 0, 0, 0);
+    pixels.show();
+    sequence_id = timer_sequence.after(500L, display_zone2);
+  }
+  
+  Serial.println(String("Sequence ID Zone 1: ") + sequence_id);
+}
+
+void display_zone2()
+{
+  // timer_sequence.stop(sequence_id);
+  if(ON2) {
+    pixels.setPixelColor(0, 255, 255, 0); // yellow #FFFF00
+    pixels.show();
+    sequence_id = timer_sequence.after(1000L, display_zone3);
+  }
+  else {
+    pixels.setPixelColor(0, 0, 0, 0);
+    pixels.show();
+    sequence_id = timer_sequence.after(500L, display_zone3);
+  }
+  
+  Serial.println(String("Sequence ID Zone 2: ") + sequence_id);
+}
+
+void display_zone3()
+{
+  // timer_sequence.stop(sequence_id);
+  if (ON3) {
+    pixels.setPixelColor(0, 0, 128, 0); // green #008000
+    pixels.show();
+    sequence_id = timer_sequence.after(1000L, display_zone4);
+  }
+  else {
+    pixels.setPixelColor(0, 0, 0, 0);
+    pixels.show();
+    sequence_id = timer_sequence.after(500L, display_zone4);
+  }
+  
+  Serial.println(String("Sequence ID Zone 3: ") + sequence_id);
+}
+
+void display_zone4()
+{
+  // timer_sequence.stop(sequence_id);
+  if (ON4) {
+    pixels.setPixelColor(0, 0, 0, 255); // blue #0000FF
+    pixels.show();
+    sequence_id = timer_sequence.after(1000L, display_zone1);
+  }
+  else {
+    pixels.setPixelColor(0, 0, 0, 0);
+    pixels.show();
+    sequence_id = timer_sequence.after(500L, display_zone1);
+  }
+  
+  Serial.println(String("Sequence ID Zone 4: ") + sequence_id);
+}
+
+void checkBlynkConnection() {
+  int mytimeout;
+
+  Serial.println("Check Blynk connection.");
+  blynkConnectedResult = Blynk.connected();
+  if (!blynkConnectedResult) {
+    Serial.println("Blynk not connected");
+    Blynk.config(auth);
+    mytimeout = millis() / 1000;
+    Serial.println("Blynk trying to reconnect.");
+    while (!blynkConnectedResult) {      
+      blynkConnectedResult = Blynk.connect(3333);
+      if((millis() / 1000) > mytimeout + 3) { // try for less than 4 seconds
+        Serial.println("Blynk reconnect timeout.");
+        break;
+      }
+    }    
+  }
+  if (blynkConnectedResult) {
+      Serial.println("Blynk connected");
+  }
+  else {
+    Serial.println("Blynk not connected");
+  }
+}
+
+
 
 void upintheair()
 {  
@@ -526,13 +636,13 @@ void relay2_onoff(boolean set)
     ON2 = true;
     digitalWrite(RELAY2, HIGH);
     led_tank2.on();
-    working = 1;
+    
   }
   else {
     ON2 = false;
     digitalWrite(RELAY2, LOW);
     led_tank2.off();
-    working = 0;
+    
   }
 
   // afterState1 = timer1.after(CLEANDELAY0, tank2_state2);
