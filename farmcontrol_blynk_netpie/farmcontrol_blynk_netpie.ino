@@ -30,7 +30,7 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(1, PIN, NEO_GRB + NEO_KHZ800);
 const int FW_VERSION = 1; // 20180326
 const char* LASTUPDATE = "1.20180403";
 const char* firmwareUrlBase = "http://www.ogonan.com/ogoupdate/";
-String mac = "farmcontrol_blynk.ino.d1_mini";
+String mac = "farmcontrol_blynk_netpie.ino.d1_mini";
 
 // internet control
 // You should get Auth Token in the Blynk App.
@@ -57,7 +57,10 @@ int operation = 0;
 bool blynkConnectedResult = false;
 
 boolean schedule = false;
-boolean WET = false;
+boolean WET1 = false;
+boolean WET2 = false;
+boolean WET3 = false;
+boolean WET4 = false;
 
 boolean ON1 = false;
 boolean ON2 = false;
@@ -144,7 +147,25 @@ int ledState = LOW;                   // ledState used to set the LED
 // check wifi status connected
 int wifi_connected = 1;
 
+// netpie.io
+#include <AuthClient.h>
+#include <MicroGear.h>
+#include <MQTTClient.h>
+#include <SHA1.h>
 
+#define APPID "ogoControl"
+#define KEY "SdrEJ2HTAfQmbCB"
+#define SECRET "tMh2gL9C7o2VxHaYYgl5FdVep"
+
+WiFiClient client;
+
+MicroGear microgear(client);
+char *myRoom = "/ogoControl/room/aiJZ77WVXc5YIP0HVrOtvTyzHMiPlR07";
+char *iamWet1 = "/ogoControl/room/aiJZ77WVXc5YIP0HVrOtvTyzHMiPlR07/1/wet";
+char *iamWet2 = "/ogoControl/room/aiJZ77WVXc5YIP0HVrOtvTyzHMiPlR07/2/wet";
+char *iamWet3 = "/ogoControl/room/aiJZ77WVXc5YIP0HVrOtvTyzHMiPlR07/3/wet";
+char *iamWet4 = "/ogoControl/room/aiJZ77WVXc5YIP0HVrOtvTyzHMiPlR07/4/wet";
+char *ALIAS = "";
 
 void setup()
 {
@@ -153,6 +174,9 @@ void setup()
   // start serial port at 9600 bps and wait for port to open:
   Serial.begin(115200);
   uint8_t data[] = { 0x00, 0x00, 0x00, 0x00 };
+
+  microgear.setEEPROMOffset(256);
+  
   display.setSegments(data);
   display.setBrightness(0x0a);
 
@@ -211,6 +235,16 @@ void setup()
   checkConnectionTimer.setInterval(15000L, checkBlynkConnection);
   display_zone1();
 
+  microgear.on(MESSAGE,onMsghandler);
+  microgear.on(CONNECTED,onConnected);
+
+  microgear.resetToken();
+  microgear.init(KEY, SECRET);
+  microgear.connect(APPID);
+  microgear.subscribe("/room/aiJZ77WVXc5YIP0HVrOtvTyzHMiPlR07/1/wet");
+  microgear.subscribe("/room/aiJZ77WVXc5YIP0HVrOtvTyzHMiPlR07/2/wet");
+  microgear.subscribe("/room/aiJZ77WVXc5YIP0HVrOtvTyzHMiPlR07/3/wet");
+  microgear.subscribe("/room/aiJZ77WVXc5YIP0HVrOtvTyzHMiPlR07/4/wet");
 }
 
 void loop()
@@ -283,6 +317,9 @@ void loop()
     // digitalWrite(ledPin, ledState);
   }
 
+  if (microgear.connected()) {
+    microgear.loop();
+  }
 }
 
 void display_zone1()
@@ -380,6 +417,13 @@ void checkBlynkConnection() {
     Serial.println("Blynk not connected");
   }
 
+  if (!microgear.connected()) {
+    Serial.println("netpie connection lost, reconnect...");
+    microgear.connect(APPID);
+  }
+  else {
+    Serial.println("netpie connected");
+  }
 
 }
 
@@ -725,15 +769,20 @@ void checkvalidtime1()
     Serial.println(String("current: ")+currenttime+String(" start: ")+starttime1+String(" stop: ")+stoptime1);
     if (bstart1 && bstop1 && bcurrent1 && !force1) {
       if ( (currenttime >= starttime1) && (currenttime <= stoptime1) ) {
-        if (!ON1) {
-          relay1_onoff(true);
-          Blynk.virtualWrite(V1, 1);
+        if (WET1 == false) {
+          if (!ON1) {
+            relay1_onoff(true);
+            Blynk.virtualWrite(V1, 1);
+          }
+        }
+        else if (WET1 == true && ON1) {
+          relay1_onoff(false);
+          Blynk.virtualWrite(V1, 0);
         }
       }
       else if (ON1) {
         relay1_onoff(false);
         Blynk.virtualWrite(V1, 0);
-
       }
     }
 }
@@ -743,16 +792,21 @@ void checkvalidtime2()
     Serial.println(String("start2: ")+bstart2+String(" stop2: ")+bstop2+String(" current2: ")+bcurrent2+String(" force2: ")+force2);
     Serial.println(String("current: ")+currenttime+String(" start2: ")+starttime2+String(" stop2: ")+stoptime2);
     if (bstart2 && bstop2 && bcurrent2 && !force2) {
-      if ( (currenttime >= starttime2) && (currenttime <= stoptime2) ) {
-        if (!ON2) {
-          relay2_onoff(true);
-          Blynk.virtualWrite(V2, 1);
+      if ( (currenttime >= starttime2) && (currenttime <= stoptime2) ) { // ยังอยู่ในเวลาที่ตั้งไว้
+        if (WET2 == false) {  // ถ้าความชื้นไม่สูง 
+          if (!ON2) {
+            relay2_onoff(true);
+            Blynk.virtualWrite(V2, 1);
+          }
+        }
+        else if (WET2 == true && ON2) { // ความชื้นสูง และ relay เปิด ให้สั่งปิด
+          relay2_onoff(false);
+          Blynk.virtualWrite(V2, 0);
         }
       }
       else if (ON2) {
         relay2_onoff(false);
         Blynk.virtualWrite(V2, 0);
-
       }
     }
 }
@@ -761,15 +815,20 @@ void checkvalidtime3()
 {
     if (bstart3 && bstop3 && bcurrent3 && !force3) {
       if ( (currenttime >= starttime3) && (currenttime <= stoptime3) ) {
-        if (!ON3) {
-          relay3_onoff(true);
-          Blynk.virtualWrite(V3, 1);
+        if (WET3 == false) {
+          if (!ON3) {
+            relay3_onoff(true);
+            Blynk.virtualWrite(V3, 1);
+          }
+        }
+        else if (WET3 == true && ON3) {
+          relay3_onoff(false);
+          Blynk.virtualWrite(V3, 0);
         }
       }
       else if (ON3) {
         relay3_onoff(false);
         Blynk.virtualWrite(V3, 0);
-
       }
     }
 }
@@ -778,15 +837,20 @@ void checkvalidtime4()
 {
     if (bstart4 && bstop4 && bcurrent4 && !force4) {
       if ( (currenttime >= starttime4) && (currenttime <= stoptime4) ) {
-        if (!ON4) {
-          relay4_onoff(true);
-          Blynk.virtualWrite(V4, 1);
+        if (WET4 == false) {
+          if (!ON4) {
+            relay4_onoff(true);
+            Blynk.virtualWrite(V4, 1);
+          }
+        }
+        else if (WET4 == true && ON4) {
+          relay4_onoff(false);
+          Blynk.virtualWrite(V4, 0);
         }
       }
       else if (ON4) {
         relay4_onoff(false);
         Blynk.virtualWrite(V4, 0);
-
       }
     }
 }
@@ -1449,4 +1513,69 @@ BLYNK_CONNECTED()
 
 }
 
+void onMsghandler(char *topic, uint8_t* msg, unsigned int msglen) {
+  Serial.print("Incoming message --> ");
+  Serial.print(topic);
+  Serial.print(" : ");
 
+  char strState[msglen];
+  for (int i = 0; i < msglen; i++) {
+    strState[i] = (char)msg[i];
+    Serial.print((char)msg[i]);
+  }
+  Serial.println();
+
+  String stateStr = String(strState).substring(0, msglen);
+
+  if(strcmp(topic, iamWet1) == 0) {
+    if (stateStr == "0") {
+      Serial.println("Wet1 = 0");
+      WET1 = false;      
+    } else if (stateStr == "1") {
+      Serial.println("Wet1 = 1");
+      WET1 = true;
+    }
+  }
+  else if (strcmp(topic, iamWet2) == 0) {
+    if (stateStr == "0") {
+      Serial.println("Wet2 = 0");
+      WET2 = false;      
+    } else if (stateStr == "1") {
+      Serial.println("Wet2 = 1");
+      WET2 = true;
+    }
+    
+  }
+  else if (strcmp(topic, iamWet3) == 0) {
+    if (stateStr == "0") {
+      Serial.println("Wet3 = 0");
+      WET3 = false;      
+    } else if (stateStr == "1") {
+      Serial.println("Wet3 = 1");
+      WET3 = true;
+    }
+  }
+  else if (strcmp(topic, iamWet4) == 0) {
+    if (stateStr == "0") {
+      Serial.println("Wet4 = 0");
+      WET4 = false;      
+    } else if (stateStr == "1") {
+      Serial.println("Wet4 = 1");
+      WET4 = true;
+    }
+  }
+
+}
+
+void onConnected(char *attribute, uint8_t* msg, unsigned int msglen) {
+  char *aliasename;
+  
+  aliasename = (char *) malloc(sizeof("ogoControl-")+sizeof(String(ESP.getChipId()).c_str() ));
+  strcpy(aliasename, "ogoControl-");
+  strcat(aliasename, (const char *) String(ESP.getChipId()).c_str() );
+  Serial.println("Connected to NETPIE...");
+  Serial.print("Aliase name: ");
+  Serial.println(aliasename);
+  microgear.setName(aliasename);
+  
+}
