@@ -27,8 +27,8 @@
 #define PIN            D2
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(1, PIN, NEO_GRB + NEO_KHZ800);
 
-const int FW_VERSION = 1; // 20180326
-const char* LASTUPDATE = "1.20180403";
+const int FW_VERSION = 2; // 20180410
+const char* LASTUPDATE = "2.20180410";
 const char* firmwareUrlBase = "http://www.ogonan.com/ogoupdate/";
 String mac = "farmcontrol_blynk_netpie.ino.d1_mini";
 
@@ -175,7 +175,7 @@ void setup()
   Serial.begin(115200);
   uint8_t data[] = { 0x00, 0x00, 0x00, 0x00 };
 
-  microgear.setEEPROMOffset(256);
+  
   
   display.setSegments(data);
   display.setBrightness(0x0a);
@@ -235,6 +235,7 @@ void setup()
   checkConnectionTimer.setInterval(15000L, checkBlynkConnection);
   display_zone1();
 
+  microgear.setEEPROMOffset(512);
   microgear.on(MESSAGE,onMsghandler);
   microgear.on(CONNECTED,onConnected);
 
