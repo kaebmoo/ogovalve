@@ -175,8 +175,8 @@ void setup()
   Serial.begin(115200);
   uint8_t data[] = { 0x00, 0x00, 0x00, 0x00 };
 
-  
-  
+
+
   display.setSegments(data);
   display.setBrightness(0x0a);
 
@@ -794,7 +794,7 @@ void checkvalidtime2()
     Serial.println(String("current: ")+currenttime+String(" start2: ")+starttime2+String(" stop2: ")+stoptime2);
     if (bstart2 && bstop2 && bcurrent2 && !force2) {
       if ( (currenttime >= starttime2) && (currenttime <= stoptime2) ) { // ยังอยู่ในเวลาที่ตั้งไว้
-        if (WET2 == false) {  // ถ้าความชื้นไม่สูง 
+        if (WET2 == false) {  // ถ้าความชื้นไม่สูง
           if (!ON2) {
             relay2_onoff(true);
             Blynk.virtualWrite(V2, 1);
@@ -1447,7 +1447,7 @@ BLYNK_WRITE(V13)
   // Get timezone offset (in seconds)
   Serial.println(String("Time zone offset: ") + t.getTZ_Offset());
 
-  if (bstart4 && bstop3) {
+  if (bstart4 && bstop4) {
     force4 = false;
   }
 
@@ -1531,7 +1531,7 @@ void onMsghandler(char *topic, uint8_t* msg, unsigned int msglen) {
   if(strcmp(topic, iamWet1) == 0) {
     if (stateStr == "0") {
       Serial.println("Wet1 = 0");
-      WET1 = false;      
+      WET1 = false;
     } else if (stateStr == "1") {
       Serial.println("Wet1 = 1");
       WET1 = true;
@@ -1540,17 +1540,17 @@ void onMsghandler(char *topic, uint8_t* msg, unsigned int msglen) {
   else if (strcmp(topic, iamWet2) == 0) {
     if (stateStr == "0") {
       Serial.println("Wet2 = 0");
-      WET2 = false;      
+      WET2 = false;
     } else if (stateStr == "1") {
       Serial.println("Wet2 = 1");
       WET2 = true;
     }
-    
+
   }
   else if (strcmp(topic, iamWet3) == 0) {
     if (stateStr == "0") {
       Serial.println("Wet3 = 0");
-      WET3 = false;      
+      WET3 = false;
     } else if (stateStr == "1") {
       Serial.println("Wet3 = 1");
       WET3 = true;
@@ -1559,7 +1559,7 @@ void onMsghandler(char *topic, uint8_t* msg, unsigned int msglen) {
   else if (strcmp(topic, iamWet4) == 0) {
     if (stateStr == "0") {
       Serial.println("Wet4 = 0");
-      WET4 = false;      
+      WET4 = false;
     } else if (stateStr == "1") {
       Serial.println("Wet4 = 1");
       WET4 = true;
@@ -1570,7 +1570,7 @@ void onMsghandler(char *topic, uint8_t* msg, unsigned int msglen) {
 
 void onConnected(char *attribute, uint8_t* msg, unsigned int msglen) {
   char *aliasename;
-  
+
   aliasename = (char *) malloc(sizeof("ogoControl-")+sizeof(String(ESP.getChipId()).c_str() ));
   strcpy(aliasename, "ogoControl-");
   strcat(aliasename, (const char *) String(ESP.getChipId()).c_str() );
@@ -1578,5 +1578,5 @@ void onConnected(char *attribute, uint8_t* msg, unsigned int msglen) {
   Serial.print("Aliase name: ");
   Serial.println(aliasename);
   microgear.setName(aliasename);
-  
+
 }
