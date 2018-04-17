@@ -233,8 +233,8 @@ void setup()
   // timer_display.every(1000L, display_zone1, 1);
 
   upintheair();
-  blynk_timer.setInterval(15000L, checkBlynkConnection);
-  blynk_timer.setInterval(10000L, syncSchedule);
+  blynk_timer.setInterval(60000L, checkBlynkConnection);
+  blynk_timer.setInterval(60000L, syncSchedule);
   display_zone1();
 
   microgear.setEEPROMOffset(512);
