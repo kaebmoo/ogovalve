@@ -146,6 +146,7 @@ int ledState = LOW;                   // ledState used to set the LED
 
 // check wifi status connected
 int wifi_connected = 1;
+int blynkreconnect = 0;
 
 // netpie.io
 #include <AuthClient.h>
@@ -416,6 +417,13 @@ void checkBlynkConnection() {
   }
   else {
     Serial.println("Blynk not connected");
+    blynkreconnect++;
+    Serial.print("blynkreconnect: ");
+    Serial.println(blynkreconnect);
+    if (blynkreconnect >= 10) {
+      // delay(60000);
+      // ESP.reset();
+    }
   }
 
   if (!microgear.connected()) {
