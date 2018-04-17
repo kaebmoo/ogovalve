@@ -45,7 +45,7 @@ WidgetLED led_tank4(33);
 WidgetLED led_status(40);
 WidgetRTC rtc;
 
-BlynkTimer checkConnectionTimer;
+BlynkTimer blynk_timer;
 Timer timer1, timer2, timer3, timer4, timer_display, timer_sequence;
 int sequence_id = -1;
 int afterState1 = -1;
@@ -233,7 +233,8 @@ void setup()
   // timer_display.every(1000L, display_zone1, 1);
 
   upintheair();
-  checkConnectionTimer.setInterval(15000L, checkBlynkConnection);
+  blynk_timer.setInterval(15000L, checkBlynkConnection);
+  blynk_timer.setInterval(10000L, syncSchedule);
   display_zone1();
 
   microgear.setEEPROMOffset(512);
@@ -265,7 +266,7 @@ void loop()
   timer4.update();
   // timer_display.update();
   timer_sequence.update();
-  checkConnectionTimer.run();
+  blynk_timer.run();
 
   Alarm.delay(0);
   currenttime = (unsigned long) now();
@@ -322,7 +323,9 @@ void loop()
   if (microgear.connected()) {
     microgear.loop();
   }
+  delay(100);
 }
+
 
 void display_zone1()
 {
