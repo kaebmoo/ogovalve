@@ -222,7 +222,12 @@ void setup()
   wifi_connected = setup_wifi();
   if (wifi_connected == 0) {
     delay(500);
+    
+    #ifdef BLYNKLOCAL
+    Blynk.config(auth, "ogoservice.ogonan.com", 80);  // in place of Blynk.begin(auth, ssid, pass);
+    #else
     Blynk.config(auth);  // in place of Blynk.begin(auth, ssid, pass);
+    #endif
     Serial.print("Blynk connecting : ");
     boolean result = Blynk.connect(3333);  // timeout set to 10 seconds and then continue without Blynk, 3333 is 10 seconds because Blynk.connect is in 3ms units.
     Serial.println(result);
