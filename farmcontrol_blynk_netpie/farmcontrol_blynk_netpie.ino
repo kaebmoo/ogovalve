@@ -1,3 +1,30 @@
+/*
+MIT License
+
+Copyright (c) 2017 kaebmoo
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+*/
+
+#define BLYNKLOCAL
+
 #include "ESP8266WiFi.h"
 #include <BlynkSimpleEsp8266.h>
 #include <WidgetRTC.h>
@@ -25,6 +52,11 @@
 #include <Adafruit_NeoPixel.h>
 
 #include <ArduinoJson.h>
+#include <TimeLord.h>
+
+float const LATITUDE = 18.786741;
+float const LONGITUDE = 100.782217;
+
 
 #define BLYNK_MAX_READBYTES 1024
 
@@ -106,8 +138,8 @@ unsigned long currenttime;
 
 unsigned long timezoneOffset;
 time_t sunriseTime, sunsetTime;
-AlarmId alarmIdSunrise = dtINVALID_ALARM_ID;
-AlarmId alarmIdSunset = dtINVALID_ALARM_ID;
+AlarmId alarmIdTime[16] = {dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID, \ 
+                          dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID};
 
 // #define UNO
 
@@ -160,6 +192,7 @@ int ledState = LOW;                   // ledState used to set the LED
 int wifi_connected = 1;
 int blynkreconnect = 0;
 
+
 // netpie.io
 #include <AuthClient.h>
 #include <MicroGear.h>
@@ -188,9 +221,7 @@ void setup()
   // start serial port at 9600 bps and wait for port to open:
   Serial.begin(115200);
   uint8_t data[] = { 0x00, 0x00, 0x00, 0x00 };
-
-
-
+  
   display.setSegments(data);
   display.setBrightness(0x0a);
 
@@ -220,6 +251,7 @@ void setup()
   delay(2000);
 
   wifi_connected = setup_wifi();
+  // wifi_connected = WiFi.begin("Redmi", "12345678"); // WL_CONNECTED
   if (wifi_connected == 0) {
     delay(500);
     
@@ -253,6 +285,7 @@ void setup()
   upintheair();
   blynk_timer.setInterval(60000L, checkBlynkConnection);
   blynk_timer.setInterval(60000L, syncSchedule);
+  syncSunriseSunset();
   display_zone1();
 
   #ifdef NETPIE
@@ -807,11 +840,6 @@ void syncSchedule()
 
 }
 
-void syncSunriseSunset()
-{
-  Serial.println("Synchronize sunrise sunset");
-  Blynk.syncVirtual(V30);
-}
 
 void checkvalidtime1()
 {
@@ -909,26 +937,14 @@ void checkvalidtime4()
     }
 }
 
-void sunriseCall()
+void zone1On()
 {
-  if (sunriseOnOff) {
-    Blynk.virtualWrite(V3, 1);
-  }
-  else {
-    Blynk.virtualWrite(V3, 0);
-  }
-
+  Blynk.virtualWrite(V1, 1);
 }
 
-void sunsetCall()
+void zone1Off()
 {
-  if (sunsetOnOff) {
-    Blynk.virtualWrite(V3, 1);
-  }
-  else {
-    Blynk.virtualWrite(V3, 0);
-  }
-
+  Blynk.virtualWrite(V1, 0);
 }
 
 BLYNK_WRITE(V1)
@@ -1018,7 +1034,7 @@ BLYNK_WRITE(V4)
 }
 
 
-BLYNK_WRITE(V20)
+BLYNK_WRITE(V69)
 {
   int pinValue = param.asInt();
 
@@ -1618,8 +1634,52 @@ BLYNK_WRITE(V13)
   Serial.println(String("start4: ")+bstart4+String(" stop4: ")+bstop4+String(" current4: ")+bcurrent4+String(" force4: ")+force4);
 }
 
-BLYNK_WRITE(V30)
+void syncSunriseSunset()
 {
+
+  Serial.println("Synchronize sunrise sunset");
+
+  struct tm c_time;
+  time_t t_of_day;
+  TimeLord nan;
+  
+  nan.TimeZone(7 * 60);
+  nan.Position(LATITUDE, LONGITUDE);
+
+  c_time.tm_year = year()-1900;
+  c_time.tm_mon= month()-1;
+  c_time.tm_mday = day();
+  c_time.tm_hour = 0;
+  c_time.tm_min = 0;
+  c_time.tm_sec = 0;
+  c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+  t_of_day = mktime(&c_time);
+
+  byte today[] = {  0, 0, 12, day(), month(), year() }; // store today's date (at noon) in an array for TimeLord to use
+
+  if (nan.SunRise(today)) // if the sun will rise today (it might not, in the [ant]arctic)
+  {
+  Serial.print("Sunrise: ");
+  Serial.print((int) today[tl_hour]);
+  Serial.print(":");
+  Serial.println((int) today[tl_minute]);
+  }
+  sunriseTime = (today[tl_hour]*60*60) + (today[tl_minute] * 60);
+  
+  if (nan.SunSet(today)) // if the sun will set today (it might not, in the [ant]arctic)
+  {
+  Serial.print("Sunset: ");
+  Serial.print((int) today[tl_hour]);
+  Serial.print(":");
+  Serial.println((int) today[tl_minute]);
+  }
+  sunsetTime = (today[tl_hour]*60*60) + (today[tl_minute] * 60);
+
+  sunriseTime = t_of_day + sunriseTime;
+  sunsetTime = t_of_day + sunsetTime;
+  Serial.println(String("Sunrise Local timezone: ") + sunriseTime);
+  Serial.println(String("Sunset Local timezone: ") + sunsetTime);
+  /*
   String webhookdata = param.asStr();
   StaticJsonBuffer<1024> jsonBuffer;
   struct tm sunrise_time, sunset_time;
@@ -1628,10 +1688,17 @@ BLYNK_WRITE(V30)
   memset(&sunrise_time, 0, sizeof(struct tm));
   memset(&sunset_time, 0, sizeof(struct tm));
   memset(&buf, 0, sizeof(buf));
-  // c_time.tm_year = year()-1900;
-  // c_time.tm_mon= month()-1;
-  // c_time.tm_mday = day();
-  // c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+  sunrise_time.tm_year = year()-1900;
+  sunrise_time.tm_mon= month()-1;
+  sunrise_time.tm_mday = day();
+  sunrise_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+  sunriseTime = mktime(&sunrise_time) - timezoneOffset;
+  
+  sunset_time.tm_year = year()-1900;
+  sunset_time.tm_mon= month()-1;
+  sunset_time.tm_mday = day();
+  sunset_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+  sunsetTime = mktime(&sunset_time) - timezoneOffset;
 
   Serial.println(webhookdata);
   JsonObject& root = jsonBuffer.parseObject(webhookdata);
@@ -1649,7 +1716,7 @@ BLYNK_WRITE(V30)
   Serial.println(String("Sunset: ") + sunset);
 
 
-  strptime(sunrise.c_str(), "%Y-%m-%dT%H:%M:%S+00:00", &sunrise_time);
+  strptime(sunrise.c_str(), "H:%M:%S %p", &sunrise_time);
   sunriseTime = mktime(&sunrise_time);
   Serial.println(String("Sunrise time: ") + sunriseTime);
   sunriseTime += timezoneOffset;
@@ -1661,7 +1728,7 @@ BLYNK_WRITE(V30)
   Serial.println(String("Hour: ") + sunrise_time.tm_hour);
   Serial.println(String("Minute: ") + sunrise_time.tm_min);
 
-  strptime(sunset.c_str(), "%Y-%m-%dT%H:%M:%S+00:00", &sunset_time);
+  strptime(sunset.c_str(), "%H:%M:%S %p", &sunset_time);
   sunsetTime = mktime(&sunset_time);
   Serial.println(String("Sunset time: ") + sunsetTime);
   sunsetTime += timezoneOffset;
@@ -1673,6 +1740,7 @@ BLYNK_WRITE(V30)
   Serial.println(String("Hour: ") + sunset_time.tm_hour);
   Serial.println(String("Minute: ") + sunset_time.tm_min);
 
+  */
   
     /*
     if (alarmIdSunrise == dtINVALID_ALARM_ID) {
@@ -1705,6 +1773,224 @@ BLYNK_WRITE(V30)
   
 }
 
+
+// Attach virtual serial terminal to Virtual Pin V1
+WidgetTerminal terminal(V0);
+
+BLYNK_WRITE(V20)
+{
+
+  TimeInputParam t(param);
+  int start = 0;
+  int stop = 0;
+
+  if (t.hasStartTime()) {    
+    start = 1;
+  }
+
+  if (t.hasStopTime()) {
+    stop = 1;
+  }
+
+  if (start == 1 && stop == 1) {
+    callAlarmTimer(t.getStartHour(), t.getStartMinute(), t.getStopHour(), t.getStopMinute(), 0);
+  }
+
+  // terminal.clear();
+  terminal.print("param 0: ");
+  terminal.println(param[0].asDouble());
+  
+  terminal.print("param 1: ");
+  terminal.println(param[1].asDouble());
+  
+  terminal.print("Buffer:");
+  terminal.println();
+  terminal.write(param.getBuffer(), param.getLength());
+  terminal.println();
+  // Ensure everything is sent
+  terminal.flush();
+
+  // Blynk.virtualWriteBinary(V10, param.getBuffer(), param.getLength());
+}
+
+
+BLYNK_WRITE(V21)
+{
+
+  TimeInputParam t(param);
+  int start = 0;
+  int stop = 0;
+
+  if (t.hasStartTime()) {    
+    start = 1;
+  }
+
+  if (t.hasStopTime()) {
+    stop = 1;
+  }
+
+  if (start == 1 && stop == 1) {
+    callAlarmTimer(t.getStartHour(), t.getStartMinute(), t.getStopHour(), t.getStopMinute(), 1);
+  }
+
+}
+
+BLYNK_WRITE(V22)
+{
+
+  TimeInputParam t(param);
+  int start = 0;
+  int stop = 0;
+
+  if (t.hasStartTime()) {    
+    start = 1;
+  }
+
+  if (t.hasStopTime()) {
+    stop = 1;
+  }
+
+  if (start == 1 && stop == 1) {
+    callAlarmTimer(t.getStartHour(), t.getStartMinute(), t.getStopHour(), t.getStopMinute(), 2);
+  }
+
+}
+
+BLYNK_WRITE(V23)
+{
+
+  TimeInputParam t(param);
+  int start = 0;
+  int stop = 0;
+
+  if (t.hasStartTime()) {    
+    start = 1;
+  }
+
+  if (t.hasStopTime()) {
+    stop = 1;
+  }
+
+  if (start == 1 && stop == 1) {
+    callAlarmTimer(t.getStartHour(), t.getStartMinute(), t.getStopHour(), t.getStopMinute(), 3);
+  }
+
+}
+
+
+BLYNK_WRITE(V24)
+{
+
+  TimeInputParam t(param);
+  int start = 0;
+  int stop = 0;
+
+  if (t.hasStartTime()) {    
+    start = 1;
+  }
+
+  if (t.hasStopTime()) {
+    stop = 1;
+  }
+
+  if (start == 1 && stop == 1) {
+    callAlarmTimer(t.getStartHour(), t.getStartMinute(), t.getStopHour(), t.getStopMinute(), 4);
+  }
+}
+
+BLYNK_WRITE(V25)
+{
+
+  TimeInputParam t(param);
+  int start = 0;
+  int stop = 0;
+
+  if (t.hasStartTime()) {    
+    start = 1;
+  }
+
+  if (t.hasStopTime()) {
+    stop = 1;
+  }
+
+  if (start == 1 && stop == 1) {
+    callAlarmTimer(t.getStartHour(), t.getStartMinute(), t.getStopHour(), t.getStopMinute(), 5);
+  }
+}
+
+BLYNK_WRITE(V26)
+{
+
+  TimeInputParam t(param);
+  int start = 0;
+  int stop = 0;
+
+  if (t.hasStartTime()) {    
+    start = 1;
+  }
+
+  if (t.hasStopTime()) {
+    stop = 1;
+  }
+
+  if (start == 1 && stop == 1) {
+    callAlarmTimer(t.getStartHour(), t.getStartMinute(), t.getStopHour(), t.getStopMinute(), 6);
+  }
+}
+
+BLYNK_WRITE(V27)
+{
+
+  TimeInputParam t(param);
+  int start = 0;
+  int stop = 0;
+
+  if (t.hasStartTime()) {    
+    start = 1;
+  }
+
+  if (t.hasStopTime()) {
+    stop = 1;
+  }
+
+  if (start == 1 && stop == 1) {
+    callAlarmTimer(t.getStartHour(), t.getStartMinute(), t.getStopHour(), t.getStopMinute(), 7);
+  }
+}
+
+
+int callAlarmTimer(unsigned int startHour, unsigned int startMin, unsigned int stopHour, unsigned int stopMin, unsigned int timeId)
+{
+  if (timeId > 7 ) {
+    return -1;
+  }
+  Serial.print("Max Alarm: ");
+  Serial.println(dtNBR_ALARMS);
+  
+  if (alarmIdTime[timeId] == dtINVALID_ALARM_ID) {
+      alarmIdTime[timeId] = Alarm.alarmOnce(startHour, startMin, 0, zone1On);
+      Serial.println("Start Time Activated :-)");
+  }
+  else {
+    Alarm.free(alarmIdTime[timeId]);
+    alarmIdTime[timeId] = dtINVALID_ALARM_ID;
+    alarmIdTime[timeId] = Alarm.alarmOnce(startHour, startMin, 0, zone1On);
+    Serial.println("Start Time Activated");
+  }
+
+  if (alarmIdTime[timeId+8] == dtINVALID_ALARM_ID) {
+      alarmIdTime[timeId+8] = Alarm.alarmOnce(stopHour, stopMin, 0, zone1Off);
+      Serial.println("Stop Time Activated :-)");
+  }
+  else {
+    Alarm.free(alarmIdTime[timeId+8]);
+    alarmIdTime[timeId+8] = dtINVALID_ALARM_ID;
+    alarmIdTime[timeId+8] = Alarm.alarmOnce(stopHour, stopMin, 0, zone1Off);
+    Serial.println("Stop Time Activated");
+  }
+}
+
+
 BLYNK_CONNECTED()
 {
   Serial.println("Blynk Connected");
@@ -1722,13 +2008,22 @@ BLYNK_CONNECTED()
   Blynk.syncVirtual(V3);
   Blynk.syncVirtual(V4);
 
-  Blynk.syncVirtual(V30);
+  // Blynk.syncVirtual(V30);
+
+  Blynk.syncVirtual(V20);
+  Blynk.syncVirtual(V21);
+  Blynk.syncVirtual(V22);
+  Blynk.syncVirtual(V23);
+  Blynk.syncVirtual(V24);
+  Blynk.syncVirtual(V25);
+  Blynk.syncVirtual(V26);
+  Blynk.syncVirtual(V27);
 
 
   if(!schedule) {
     Serial.println("Sync. Schedule");
-    Alarm.alarmRepeat(0,0,0, syncSchedule);
-    // Alarm.alarmRepeat(0,0,0, syncSunriseSunset);
+    // Alarm.alarmRepeat(0,0,0, syncSchedule);
+    Alarm.alarmRepeat(0,0,0, syncSunriseSunset);
     schedule = true;
   }
 
