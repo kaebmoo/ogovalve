@@ -136,9 +136,11 @@ unsigned long starttime4;
 unsigned long stoptime4;
 unsigned long currenttime;
 
+int workingTime, stopPeriod, repeatsTime, timesPerDay;
+
 unsigned long timezoneOffset;
 time_t sunriseTime, sunsetTime;
-AlarmId alarmIdTime[16] = {dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID, \ 
+AlarmId alarmIdTime[16] = {dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID, \
                           dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID};
 
 // #define UNO
@@ -221,7 +223,7 @@ void setup()
   // start serial port at 9600 bps and wait for port to open:
   Serial.begin(115200);
   uint8_t data[] = { 0x00, 0x00, 0x00, 0x00 };
-  
+
   display.setSegments(data);
   display.setBrightness(0x0a);
 
@@ -246,6 +248,12 @@ void setup()
   digitalWrite(RELAY2, LOW);
   digitalWrite(RELAY3, LOW);
   digitalWrite(RELAY4, LOW);
+  
+  workingTime = 28800;
+  stopPeriod = 1440;
+  repeatsTime = workingTime + stopPeriod;
+  timesPerDay = 24;
+
 
 
   delay(2000);
@@ -254,7 +262,7 @@ void setup()
   // wifi_connected = WiFi.begin("Redmi", "12345678"); // WL_CONNECTED
   if (wifi_connected == 0) {
     delay(500);
-    
+
     #ifdef BLYNKLOCAL
     Blynk.config(auth, "ogoservice.ogonan.com", 80);  // in place of Blynk.begin(auth, ssid, pass);
     #else
@@ -280,12 +288,12 @@ void setup()
   timer2.every(1000L, checkvalidtime2);
   timer3.every(1000L, checkvalidtime3);
   timer4.every(1000L, checkvalidtime4);
-  // timer_display.every(1000L, display_zone1, 1);
+  // timer_display.every(1000L, display_zone1, 1);  
 
   upintheair();
   blynk_timer.setInterval(60000L, checkBlynkConnection);
   blynk_timer.setInterval(60000L, syncSchedule);
-  syncSunriseSunset();
+  syncZone2();
   display_zone1();
 
   #ifdef NETPIE
@@ -947,10 +955,50 @@ void zone1Off()
   Blynk.virtualWrite(V1, 0);
 }
 
+void zone2start()
+{
+  char tz[] = "Asia/Bangkok";
+
+  // Blynk.virtualWrite(V11, 0, 0, 23, 59);
+  repeatsTime = (workingTime * 60) + (stopPeriod * 60);
+  Serial.print("Working time: ");
+  Serial.println(workingTime);
+  Serial.print("Stop period time: ");
+  Serial.println(stopPeriod);
+  Serial.print("Repeats time: ");
+  Serial.println(repeatsTime);
+  Serial.print("Time per day: ");
+  Serial.println(timesPerDay);
+  delay(3000);
+  // Alarm.timerRepeat(repeatsTime, zone2Repeats);            // timer for every n seconds, zone2Repeats run after n seconds
+  zone2Repeats();
+  blynk_timer.setTimer(repeatsTime * 1000L, zone2Repeats, timesPerDay);
+}
+
+void zone2Repeats() {
+  unsigned long workingTimeout;
+
+  Serial.println("zone 2 timer: ");
+  Serial.print("timers per day: ");
+  Serial.println( timesPerDay );
+
+  Serial.print("working time: ");
+  Serial.println( workingTime );
+
+  Blynk.virtualWrite(V2, 1);
+  workingTimeout = workingTime * 60 * 1000;
+  blynk_timer.setTimeout(workingTimeout, zone2Off);
+}
+
+void zone2Off() {
+  Blynk.virtualWrite(V2, 0);
+}
+
 BLYNK_WRITE(V1)
 {
   int pinValue = param.asInt();
 
+  Serial.print("Pin Value: ");
   Serial.println(pinValue);
   if (pinValue == 1) {
     Serial.println("switch 1 just pressed");
@@ -973,6 +1021,7 @@ BLYNK_WRITE(V2)
 {
   int pinValue = param.asInt();
 
+  Serial.print("Pin Value: ");
   Serial.println(pinValue);
   if (pinValue == 1) {
     Serial.println("switch 2 just pressed");
@@ -994,6 +1043,7 @@ BLYNK_WRITE(V3)
 {
   int pinValue = param.asInt();
 
+  Serial.print("Pin Value: ");
   Serial.println(pinValue);
   if (pinValue == 1) {
     Serial.println("switch 3 just pressed");
@@ -1016,6 +1066,7 @@ BLYNK_WRITE(V4)
 {
   int pinValue = param.asInt();
 
+  Serial.print("Pin Value: ");
   Serial.println(pinValue);
   if (pinValue == 1) {
     Serial.println("switch 4 just pressed");
@@ -1038,6 +1089,7 @@ BLYNK_WRITE(V69)
 {
   int pinValue = param.asInt();
 
+  Serial.print("Pin Value: ");
   Serial.println(pinValue);
   if (pinValue == 1) {
     delay(500);
@@ -1424,11 +1476,11 @@ BLYNK_WRITE(V12)
 
   if (bstart3 && bstop3) {
     force3 = false;
-    
+
   }
   if ( (sunriseOnOff != -1) || (sunsetOnOff != -1) ) {
-    
-    // sunriseOnOff = -1 sunriseOnOff = 1 (start) sunriseOnOff = 0 (stop) 
+
+    // sunriseOnOff = -1 sunriseOnOff = 1 (start) sunriseOnOff = 0 (stop)
     if (sunriseOnOff != -1 && bcurrent3 == true) {
       if (sunriseOnOff) {
         // start at sunrise
@@ -1450,10 +1502,10 @@ BLYNK_WRITE(V12)
     if (sunsetOnOff) {
       // start at sunset
       starttime3 = sunsetTime;
-      if (stoptime3 <= sunsetTime) { // ? stop at sunrise or stop before sunset        
+      if (stoptime3 <= sunsetTime) { // ? stop at sunrise or stop before sunset
         stoptime3 = stoptime3 + 86400;
       }
-      
+
     }
     else {
       // stop at sunset
@@ -1634,6 +1686,15 @@ BLYNK_WRITE(V13)
   Serial.println(String("start4: ")+bstart4+String(" stop4: ")+bstop4+String(" current4: ")+bcurrent4+String(" force4: ")+force4);
 }
 
+void syncZone2()
+{
+  // assigned zone 2 repeats time
+  Blynk.syncVirtual(V15);
+  Blynk.syncVirtual(V16);
+  Blynk.syncVirtual(V17);
+  Blynk.syncVirtual(V40);
+}
+
 void syncSunriseSunset()
 {
 
@@ -1642,7 +1703,7 @@ void syncSunriseSunset()
   struct tm c_time;
   time_t t_of_day;
   TimeLord nan;
-  
+
   nan.TimeZone(7 * 60);
   nan.Position(LATITUDE, LONGITUDE);
 
@@ -1665,7 +1726,7 @@ void syncSunriseSunset()
   Serial.println((int) today[tl_minute]);
   }
   sunriseTime = (today[tl_hour]*60*60) + (today[tl_minute] * 60);
-  
+
   if (nan.SunSet(today)) // if the sun will set today (it might not, in the [ant]arctic)
   {
   Serial.print("Sunset: ");
@@ -1679,6 +1740,8 @@ void syncSunriseSunset()
   sunsetTime = t_of_day + sunsetTime;
   Serial.println(String("Sunrise Local timezone: ") + sunriseTime);
   Serial.println(String("Sunset Local timezone: ") + sunsetTime);
+
+
   /*
   String webhookdata = param.asStr();
   StaticJsonBuffer<1024> jsonBuffer;
@@ -1693,7 +1756,7 @@ void syncSunriseSunset()
   sunrise_time.tm_mday = day();
   sunrise_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
   sunriseTime = mktime(&sunrise_time) - timezoneOffset;
-  
+
   sunset_time.tm_year = year()-1900;
   sunset_time.tm_mon= month()-1;
   sunset_time.tm_mday = day();
@@ -1721,7 +1784,7 @@ void syncSunriseSunset()
   Serial.println(String("Sunrise time: ") + sunriseTime);
   sunriseTime += timezoneOffset;
   Serial.println(String("Sunrise Local timezone: ") + sunriseTime);
-  
+
   sunrise_time = *localtime(&sunriseTime);
   strftime(buf, sizeof(buf), "%H:%M", &sunrise_time);
   Serial.println(String("Sunrise time: ") + buf);
@@ -1733,7 +1796,7 @@ void syncSunriseSunset()
   Serial.println(String("Sunset time: ") + sunsetTime);
   sunsetTime += timezoneOffset;
   Serial.println(String("Sunset Local timezone: ") + sunsetTime);
-  
+
   sunset_time = *localtime(&sunsetTime);
   strftime(buf, sizeof(buf), "%H:%M", &sunset_time);
   Serial.println(String("Sunset time: ") + buf);
@@ -1741,7 +1804,7 @@ void syncSunriseSunset()
   Serial.println(String("Minute: ") + sunset_time.tm_min);
 
   */
-  
+
     /*
     if (alarmIdSunrise == dtINVALID_ALARM_ID) {
       alarmIdSunrise = Alarm.alarmOnce(sunrise_time.tm_hour, sunrise_time.tm_min, 0, sunriseCall);
@@ -1754,10 +1817,10 @@ void syncSunriseSunset()
       Serial.println("sunriseCall Activated");
     }
     */
-  
 
-  
-  
+
+
+
     /*
     if (alarmIdSunset == dtINVALID_ALARM_ID) {
       alarmIdSunset = Alarm.alarmOnce(sunset_time.tm_hour, sunset_time.tm_min, 0, sunsetCall);
@@ -1770,7 +1833,7 @@ void syncSunriseSunset()
       Serial.println("sunsetCall Activated");
     }
     */
-  
+
 }
 
 
@@ -1784,7 +1847,7 @@ BLYNK_WRITE(V20)
   int start = 0;
   int stop = 0;
 
-  if (t.hasStartTime()) {    
+  if (t.hasStartTime()) {
     start = 1;
   }
 
@@ -1798,11 +1861,11 @@ BLYNK_WRITE(V20)
 
   // terminal.clear();
   terminal.print("param 0: ");
-  terminal.println(param[0].asDouble());
-  
+  terminal.println(param[0].asLong());
+
   terminal.print("param 1: ");
-  terminal.println(param[1].asDouble());
-  
+  terminal.println(param[1].asLong());
+
   terminal.print("Buffer:");
   terminal.println();
   terminal.write(param.getBuffer(), param.getLength());
@@ -1821,7 +1884,7 @@ BLYNK_WRITE(V21)
   int start = 0;
   int stop = 0;
 
-  if (t.hasStartTime()) {    
+  if (t.hasStartTime()) {
     start = 1;
   }
 
@@ -1842,7 +1905,7 @@ BLYNK_WRITE(V22)
   int start = 0;
   int stop = 0;
 
-  if (t.hasStartTime()) {    
+  if (t.hasStartTime()) {
     start = 1;
   }
 
@@ -1863,7 +1926,7 @@ BLYNK_WRITE(V23)
   int start = 0;
   int stop = 0;
 
-  if (t.hasStartTime()) {    
+  if (t.hasStartTime()) {
     start = 1;
   }
 
@@ -1885,7 +1948,7 @@ BLYNK_WRITE(V24)
   int start = 0;
   int stop = 0;
 
-  if (t.hasStartTime()) {    
+  if (t.hasStartTime()) {
     start = 1;
   }
 
@@ -1905,7 +1968,7 @@ BLYNK_WRITE(V25)
   int start = 0;
   int stop = 0;
 
-  if (t.hasStartTime()) {    
+  if (t.hasStartTime()) {
     start = 1;
   }
 
@@ -1925,7 +1988,7 @@ BLYNK_WRITE(V26)
   int start = 0;
   int stop = 0;
 
-  if (t.hasStartTime()) {    
+  if (t.hasStartTime()) {
     start = 1;
   }
 
@@ -1945,7 +2008,7 @@ BLYNK_WRITE(V27)
   int start = 0;
   int stop = 0;
 
-  if (t.hasStartTime()) {    
+  if (t.hasStartTime()) {
     start = 1;
   }
 
@@ -1966,7 +2029,7 @@ int callAlarmTimer(unsigned int startHour, unsigned int startMin, unsigned int s
   }
   Serial.print("Max Alarm: ");
   Serial.println(dtNBR_ALARMS);
-  
+
   if (alarmIdTime[timeId] == dtINVALID_ALARM_ID) {
       alarmIdTime[timeId] = Alarm.alarmOnce(startHour, startMin, 0, zone1On);
       Serial.println("Start Time Activated :-)");
@@ -1990,6 +2053,62 @@ int callAlarmTimer(unsigned int startHour, unsigned int startMin, unsigned int s
   }
 }
 
+BLYNK_WRITE(V15)
+{
+  // จำนวนครั้งต่อวัน
+  // times per day
+  timesPerDay = param.asInt();
+
+  Serial.print("Times per day: ");
+  Serial.println(timesPerDay);
+  Serial.println();
+}
+
+
+BLYNK_WRITE(V16)
+{
+  // working time minute
+  workingTime = param.asInt();
+
+  Serial.print("Working: ");
+  Serial.println(workingTime);
+  Serial.println();
+
+}
+
+BLYNK_WRITE(V17)
+{
+  // stop period minute
+  stopPeriod = param.asInt();
+
+  Serial.print("Stop period: ");
+  Serial.println(stopPeriod);
+  Serial.println();
+}
+
+BLYNK_WRITE(V40)
+{
+  // เวลาที่เริ่มทำงาน start time on zone 2
+  TimeInputParam t(param);
+  long startTimeInSecs = param[0].asLong();
+
+  Serial.print("start time in secs: ");
+  Serial.println(startTimeInSecs);
+  Serial.println();
+  if (t.hasStartTime()) {
+    Serial.print("Hour: ");
+    Serial.print(t.getStartHour());
+    Serial.print(" Min: ");
+    Serial.println(t.getStartMinute());
+  }
+
+  Alarm.alarmOnce(t.getStartHour(), t.getStartMinute(), 0, zone2start);
+
+}
+
+
+
+
 
 BLYNK_CONNECTED()
 {
@@ -2000,6 +2119,7 @@ BLYNK_CONNECTED()
 
   Blynk.syncVirtual(V10);
   Blynk.syncVirtual(V11);
+  syncSunriseSunset();
   Blynk.syncVirtual(V12);
   Blynk.syncVirtual(V13);
 
@@ -2008,7 +2128,7 @@ BLYNK_CONNECTED()
   Blynk.syncVirtual(V3);
   Blynk.syncVirtual(V4);
 
-  // Blynk.syncVirtual(V30);
+
 
   Blynk.syncVirtual(V20);
   Blynk.syncVirtual(V21);
@@ -2019,11 +2139,11 @@ BLYNK_CONNECTED()
   Blynk.syncVirtual(V26);
   Blynk.syncVirtual(V27);
 
-
   if(!schedule) {
     Serial.println("Sync. Schedule");
     // Alarm.alarmRepeat(0,0,0, syncSchedule);
     Alarm.alarmRepeat(0,0,0, syncSunriseSunset);
+    Alarm.alarmRepeat(0,0,0, syncZone2);
     schedule = true;
   }
 
