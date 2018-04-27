@@ -969,7 +969,7 @@ void zone2start()
   Serial.println(repeatsTime);
   Serial.print("Time per day: ");
   Serial.println(timesPerDay);
-  delay(3000);
+  
   // Alarm.timerRepeat(repeatsTime, zone2Repeats);            // timer for every n seconds, zone2Repeats run after n seconds
   zone2Repeats();
   blynk_timer.setTimer(repeatsTime * 1000L, zone2Repeats, timesPerDay);
