@@ -947,11 +947,13 @@ void checkvalidtime4()
 
 void zone1On()
 {
+  relay1_onoff(true);
   Blynk.virtualWrite(V1, 1);
 }
 
 void zone1Off()
 {
+  relay1_onoff(false);
   Blynk.virtualWrite(V1, 0);
 }
 
