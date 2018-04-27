@@ -74,11 +74,11 @@ String firmwareName = "farmcontrol_blynk_netpie.ino.d1_mini";
 char auth[] = "12345678901234567890abcdefghijkl";
 char c_auth[33] = "";           // authen token blynk
 bool shouldSaveConfig = false;
-WidgetLED led_tank1(30);
-WidgetLED led_tank2(31);
-WidgetLED led_tank3(32);
-WidgetLED led_tank4(33);
-WidgetLED led_status(40);
+WidgetLED led_tank1(50);
+WidgetLED led_tank2(51);
+WidgetLED led_tank3(52);
+WidgetLED led_tank4(53);
+WidgetLED led_status(54);
 WidgetRTC rtc;
 
 BlynkTimer blynk_timer;
@@ -248,7 +248,7 @@ void setup()
   digitalWrite(RELAY2, LOW);
   digitalWrite(RELAY3, LOW);
   digitalWrite(RELAY4, LOW);
-  
+
   workingTime = 28800;
   stopPeriod = 1440;
   repeatsTime = workingTime + stopPeriod;
@@ -288,7 +288,7 @@ void setup()
   timer2.every(1000L, checkvalidtime2);
   timer3.every(1000L, checkvalidtime3);
   timer4.every(1000L, checkvalidtime4);
-  // timer_display.every(1000L, display_zone1, 1);  
+  // timer_display.every(1000L, display_zone1, 1);
 
   upintheair();
   blynk_timer.setInterval(60000L, checkBlynkConnection);
@@ -969,10 +969,10 @@ void zone2start()
   Serial.println(repeatsTime);
   Serial.print("Time per day: ");
   Serial.println(timesPerDay);
-  
+
   // Alarm.timerRepeat(repeatsTime, zone2Repeats);            // timer for every n seconds, zone2Repeats run after n seconds
   zone2Repeats();
-  blynk_timer.setTimer(repeatsTime * 1000L, zone2Repeats, timesPerDay);
+  blynk_timer.setTimer(repeatsTime * 1000L, zone2Repeats, timesPerDay-1);
 }
 
 void zone2Repeats() {
@@ -985,12 +985,14 @@ void zone2Repeats() {
   Serial.print("working time: ");
   Serial.println( workingTime );
 
+  relay2_onoff(true);
   Blynk.virtualWrite(V2, 1);
   workingTimeout = workingTime * 60 * 1000;
   blynk_timer.setTimeout(workingTimeout, zone2Off);
 }
 
 void zone2Off() {
+  relay2_onoff(false);
   Blynk.virtualWrite(V2, 0);
 }
 
