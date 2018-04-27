@@ -476,7 +476,7 @@ void checkBlynkConnection() {
   blynkConnectedResult = Blynk.connected();
   if (!blynkConnectedResult) {
     Serial.println("Blynk not connected");
-    Blynk.config(auth);
+    
     mytimeout = millis() / 1000;
     Serial.println("Blynk trying to reconnect.");
     while (!blynkConnectedResult) {
