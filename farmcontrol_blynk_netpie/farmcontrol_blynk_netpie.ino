@@ -277,6 +277,7 @@ void setup()
     }
     else {
       Serial.println("Connected to Blynk server");
+
     }
 
   }
@@ -476,7 +477,7 @@ void checkBlynkConnection() {
   blynkConnectedResult = Blynk.connected();
   if (!blynkConnectedResult) {
     Serial.println("Blynk not connected");
-    
+
     mytimeout = millis() / 1000;
     Serial.println("Blynk trying to reconnect.");
     while (!blynkConnectedResult) {
@@ -1106,7 +1107,7 @@ BLYNK_WRITE(V10)
 {
 
   long startTimeInSecs = param[0].asLong();
-  Serial.print("Start time in secs: ");
+  Serial.print("V1: Start time in secs: ");
   Serial.println(startTimeInSecs);
   Serial.println();
 
@@ -1234,13 +1235,14 @@ BLYNK_WRITE(V10)
   Serial.println(currentTime);
   Serial.println();
   Serial.println(String("start1: ")+bstart1+String(" stop1: ")+bstop1+String(" current1: ")+bcurrent1+String(" force1: ")+force1);
+  Serial.println();
 }
 
 BLYNK_WRITE(V11)
 {
 
   long startTimeInSecs = param[0].asLong();
-  Serial.print("Start time in secs: ");
+  Serial.print("V2: Start time in secs: ");
   Serial.println(startTimeInSecs);
   Serial.println();
 
@@ -1368,13 +1370,14 @@ BLYNK_WRITE(V11)
   Serial.println(currentTime);
   Serial.println();
   Serial.println(String("start2: ")+bstart2+String(" stop2: ")+bstop2+String(" current2: ")+bcurrent2+String(" force2: ")+force2);
+  Serial.println();
 }
 
 BLYNK_WRITE(V12)
 {
 
   long startTimeInSecs = param[0].asLong();
-  Serial.print("Start time in secs: ");
+  Serial.print("V3: Start time in secs: ");
   Serial.println(startTimeInSecs);
   Serial.println();
 
@@ -1482,45 +1485,7 @@ BLYNK_WRITE(V12)
     force3 = false;
 
   }
-  if ( (sunriseOnOff != -1) || (sunsetOnOff != -1) ) {
-
-    // sunriseOnOff = -1 sunriseOnOff = 1 (start) sunriseOnOff = 0 (stop)
-    if (sunriseOnOff != -1 && bcurrent3 == true) {
-      if (sunriseOnOff) {
-        // start at sunrise
-        starttime3 = sunriseTime;
-        if (stoptime3 <= sunriseTime) {
-          stoptime3 = stoptime3 + 86400;  // + 24hr
-        }
-      }
-      else {
-        // stop at sunrise
-        stoptime3 = sunriseTime;
-        if (starttime3 >= sunriseTime) {
-          stoptime3 = sunriseTime + 86400;
-        }
-      }
-    }
-
-    if (sunsetOnOff != -1 && bcurrent3 == true) {
-    if (sunsetOnOff) {
-      // start at sunset
-      starttime3 = sunsetTime;
-      if (stoptime3 <= sunsetTime) { // ? stop at sunrise or stop before sunset
-        stoptime3 = stoptime3 + 86400;
-      }
-
-    }
-    else {
-      // stop at sunset
-      stoptime3 = sunsetTime;
-      if (starttime3 >= sunsetTime) {
-        stoptime3 = sunsetTime + 86400;
-      }
-    }
-  }
-  }
-
+  
   // weekday();         // day of the week (1-7), Sunday is day 1
   // 1. Sunday, 2. Mon, 3. Tue, ...
   Serial.println(String("Weekday ") + weekday());
@@ -1548,19 +1513,59 @@ BLYNK_WRITE(V12)
     bcurrent3 = false;
   }
 
+  if ( (sunriseOnOff != -1) || (sunsetOnOff != -1) ) {
+
+    // sunriseOnOff = -1 sunriseOnOff = 1 (start) sunriseOnOff = 0 (stop)
+    if (sunriseOnOff != -1 && bcurrent3 == true) {
+      if (sunriseOnOff) {
+        // start at sunrise
+        starttime3 = sunriseTime;
+        if (stoptime3 <= sunriseTime) {
+          stoptime3 = stoptime3 + 86400;  // + 24hr
+        }
+      }
+      else {
+        // stop at sunrise
+        stoptime3 = sunriseTime;
+        if (starttime3 >= sunriseTime) {
+          stoptime3 = sunriseTime + 86400;
+        }
+      }
+    }
+
+    if (sunsetOnOff != -1 && bcurrent3 == true) {
+      if (sunsetOnOff) {
+        // start at sunset
+        starttime3 = sunsetTime;
+        if (stoptime3 <= sunsetTime) { // ? stop at sunrise or stop before sunset
+          stoptime3 = stoptime3 + 86400;
+        }
+  
+      }
+      else {
+        // stop at sunset
+        stoptime3 = sunsetTime;
+        if (starttime3 >= sunsetTime) {
+          stoptime3 = sunsetTime + 86400;
+        }
+      }
+    }
+  }
+
   // setTime((time_t) now());
   String currentTime = String(hour()) + ":" + minute() + ":" + second();
   Serial.print("Current time: ");
   Serial.println(currentTime);
   Serial.println();
   Serial.println(String("start3: ")+bstart3+String(" stop3: ")+bstop3+String(" current3: ")+bcurrent3+String(" force3: ")+force3);
+  Serial.println();
 }
 
 BLYNK_WRITE(V13)
 {
 
   long startTimeInSecs = param[0].asLong();
-  Serial.print("Start time in secs: ");
+  Serial.print("V4: Start time in secs: ");
   Serial.println(startTimeInSecs);
   Serial.println();
 
@@ -1688,6 +1693,7 @@ BLYNK_WRITE(V13)
   Serial.println(currentTime);
   Serial.println();
   Serial.println(String("start4: ")+bstart4+String(" stop4: ")+bstop4+String(" current4: ")+bcurrent4+String(" force4: ")+force4);
+  Serial.println();
 }
 
 void syncZone2()
@@ -2116,24 +2122,30 @@ BLYNK_WRITE(V40)
 
 BLYNK_CONNECTED()
 {
-  Serial.println("Blynk Connected");
+  Serial.println("Synchronize Virtual Pin");
+  Serial.println("Start Synchronize Time");
   rtc.begin();
+  for(int i = 0; i < 10; i++) {
+    Blynk.run();
+  }
 
   // Blynk.syncAll();
 
+  // Synchonize button
+  Blynk.syncVirtual(V1);
+  Blynk.syncVirtual(V2);
+  Blynk.syncVirtual(V3);
+  Blynk.syncVirtual(V4);
+
+  // Synchonize timer
   Blynk.syncVirtual(V10);
   Blynk.syncVirtual(V11);
   syncSunriseSunset();
   Blynk.syncVirtual(V12);
   Blynk.syncVirtual(V13);
 
-  Blynk.syncVirtual(V1);
-  Blynk.syncVirtual(V2);
-  Blynk.syncVirtual(V3);
-  Blynk.syncVirtual(V4);
-
-
-
+  
+  // Synchonize timer zone 1
   Blynk.syncVirtual(V20);
   Blynk.syncVirtual(V21);
   Blynk.syncVirtual(V22);
@@ -2143,6 +2155,7 @@ BLYNK_CONNECTED()
   Blynk.syncVirtual(V26);
   Blynk.syncVirtual(V27);
 
+  // add schedule check at midnight
   if(!schedule) {
     Serial.println("Sync. Schedule");
     // Alarm.alarmRepeat(0,0,0, syncSchedule);
