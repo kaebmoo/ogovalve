@@ -393,10 +393,11 @@ void loop()
     // digitalWrite(ledPin, ledState);
   }
 
+  #ifdef NETPIE
   if (microgear.connected()) {
     microgear.loop();
   }
-
+  #endif
 }
 
 
