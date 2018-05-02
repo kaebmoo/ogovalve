@@ -258,7 +258,7 @@ void setup()
 
   delay(2000);
 
-  wifi_connected = setup_wifi();
+  wifi_connected = setupWifi();
   // wifi_connected = WiFi.begin("Redmi", "12345678"); // WL_CONNECTED
   if (wifi_connected == 0) {
     delay(500);
@@ -571,7 +571,7 @@ void upintheair()
 }
 
 
-int setup_wifi() {
+int setupWifi() {
 
   WiFiManager wifiManager;
   String APName;
