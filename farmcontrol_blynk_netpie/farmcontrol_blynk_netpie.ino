@@ -63,7 +63,7 @@ float const LONGITUDE = 100.782217;
 #define PIN            D2
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(1, PIN, NEO_GRB + NEO_KHZ800);
 
-const int FW_VERSION = 2; // 20180410
+const int FW_VERSION = 3; // 20180410 20180504
 const char* LASTUPDATE = "2.20180410";
 const char* firmwareUrlBase = "http://www.ogonan.com/ogoupdate/";
 String firmwareName = "farmcontrol_blynk_netpie.ino.d1_mini";
