@@ -745,13 +745,13 @@ void relay1_onoff(boolean set)
     ON1 = true;
     digitalWrite(RELAY1, HIGH);
     led_tank1.on();
-
+    delay(300); // wait for mechanism response time
   }
   else {
     ON1 = false;
     digitalWrite(RELAY1, LOW);
     led_tank1.off();
-
+    delay(300);
   }
 
   // afterState1 = timer1.after(CLEANDELAY0, tank1_state2);
@@ -772,13 +772,13 @@ void relay2_onoff(boolean set)
     ON2 = true;
     digitalWrite(RELAY2, HIGH);
     led_tank2.on();
-
+    delay(300);
   }
   else {
     ON2 = false;
     digitalWrite(RELAY2, LOW);
     led_tank2.off();
-
+    delay(300);
   }
 
   // afterState1 = timer1.after(CLEANDELAY0, tank2_state2);
@@ -798,13 +798,13 @@ void relay3_onoff(boolean set)
     ON3 = true;
     digitalWrite(RELAY3, HIGH);
     led_tank3.on();
-
+    delay(300);
   }
   else {
     ON3 = false;
     digitalWrite(RELAY3, LOW);
     led_tank3.off();
-
+    delay(300);
   }
 
   // afterState1 = timer1.after(CLEANDELAY0, tank3_state2);
@@ -825,13 +825,13 @@ void relay4_onoff(boolean set)
     ON4 = true;
     digitalWrite(RELAY4, HIGH);
     led_tank4.on();
-
+    delay(300);
   }
   else {
     ON4 = false;
     digitalWrite(RELAY4, LOW);
     led_tank4.off();
-
+    delay(300);
   }
   // afterState1 = timer1.after(CLEANDELAY0, tank4_state2);
 
