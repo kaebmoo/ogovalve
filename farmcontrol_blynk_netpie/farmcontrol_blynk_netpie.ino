@@ -2131,6 +2131,10 @@ BLYNK_CONNECTED()
   }
 
   // Blynk.syncAll();
+  Blynk.virtualWrite(V1, digitalRead(RELAY1));
+  Blynk.virtualWrite(V2, digitalRead(RELAY2));
+  Blynk.virtualWrite(V3, digitalRead(RELAY3));
+  Blynk.virtualWrite(V4, digitalRead(RELAY4));
 
   // Synchonize button
   Blynk.syncVirtual(V1);
