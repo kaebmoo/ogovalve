@@ -23,7 +23,8 @@ SOFTWARE.
 
 */
 
-#define BLYNKLOCAL
+// #define BLYNKLOCAL
+#define ONECHANNEL
 
 #include "ESP8266WiFi.h"
 #include <BlynkSimpleEsp8266.h>
@@ -156,7 +157,11 @@ AlarmId alarmIdTime[16] = {dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM
 #define DIO D4
 int ledPin = D4;
 byte buttons[] = {D0, D5, D6, D7};  // switch
+#ifdef ONECHANNEL
+int RELAY1 = D1;
+#else
 int RELAY1 = D5;
+#endif
 int RELAY2 = D6;
 int RELAY3 = D7;
 int RELAY4 = D8;
