@@ -748,14 +748,26 @@ void relay1_onoff(boolean set)
 
   if (set) {
     ON1 = true;
+      #ifdef ONECHANNEL
+    ON2 = true;
+    ON3 = true;
+    ON4 = true;
+    #endif
     digitalWrite(RELAY1, HIGH);
     led_tank1.on();
+    Blynk.virtualWrite(V1, 1);
     delay(300); // wait for mechanism response time
   }
   else {
     ON1 = false;
+    #ifdef ONECHANNEL
+    ON2 = false;
+    ON3 = false;
+    ON4 = false;
+    #endif
     digitalWrite(RELAY1, LOW);
     led_tank1.off();
+    Blynk.virtualWrite(V1, 0);
     delay(300);
   }
 
@@ -775,14 +787,26 @@ void relay2_onoff(boolean set)
 
   if (set) {
     ON2 = true;
+    #ifdef ONECHANNEL
+    digitalWrite(RELAY1, HIGH);
+    led_tank1.on();
+    Blynk.virtualWrite(V1, 1);
+    #else
     digitalWrite(RELAY2, HIGH);
     led_tank2.on();
+    #endif
     delay(300);
   }
   else {
     ON2 = false;
+    #ifdef ONECHANNEL
+    digitalWrite(RELAY1, LOW);
+    led_tank1.off();
+    Blynk.virtualWrite(V1, 0);
+    #else
     digitalWrite(RELAY2, LOW);
     led_tank2.off();
+    #endif
     delay(300);
   }
 
@@ -801,14 +825,26 @@ void relay3_onoff(boolean set)
 
   if (set) {
     ON3 = true;
+    #ifdef ONECHANNEL
+    digitalWrite(RELAY1, HIGH);
+    led_tank1.on();
+    Blynk.virtualWrite(V1, 1);
+    #else
     digitalWrite(RELAY3, HIGH);
     led_tank3.on();
+    #endif
     delay(300);
   }
   else {
     ON3 = false;
+    #ifdef ONECHANNEL
+    digitalWrite(RELAY1, LOW);
+    led_tank1.off();
+    Blynk.virtualWrite(V1, 0);
+    #else
     digitalWrite(RELAY3, LOW);
     led_tank3.off();
+    #endif
     delay(300);
   }
 
@@ -828,14 +864,26 @@ void relay4_onoff(boolean set)
 
   if (set) {
     ON4 = true;
+    #ifdef ONECHANNEL
+    digitalWrite(RELAY1, HIGH);
+    led_tank1.on();
+    Blynk.virtualWrite(V1, 1);
+    #else
     digitalWrite(RELAY4, HIGH);
     led_tank4.on();
+    #endif
     delay(300);
   }
   else {
     ON4 = false;
+    #ifdef ONECHANNEL
+    digitalWrite(RELAY1, LOW);
+    led_tank1.off();
+    Blynk.virtualWrite(V1, 0);
+    #else
     digitalWrite(RELAY4, LOW);
     led_tank4.off();
+    #endif
     delay(300);
   }
   // afterState1 = timer1.after(CLEANDELAY0, tank4_state2);
@@ -864,18 +912,15 @@ void checkvalidtime1()
       if ( (currenttime >= starttime1) && (currenttime <= stoptime1) ) {
         if (WET1 == false) {
           if (!ON1) {
-            relay1_onoff(true);
-            Blynk.virtualWrite(V1, 1);
+            relay1_onoff(true);            
           }
         }
         else if (WET1 == true && ON1) {
-          relay1_onoff(false);
-          Blynk.virtualWrite(V1, 0);
+          relay1_onoff(false);          
         }
       }
       else if (ON1) {
         relay1_onoff(false);
-        Blynk.virtualWrite(V1, 0);
       }
     }
 }
@@ -886,17 +931,17 @@ void checkvalidtime2()
     Serial.println(String("current: ")+currenttime+String(" start2: ")+starttime2+String(" stop2: ")+stoptime2);
     if (bstart2 && bstop2 && bcurrent2 && !force2) {
       if ( (currenttime >= starttime2) && (currenttime <= stoptime2) ) { // ยังอยู่ในเวลาที่ตั้งไว้
-        if (WET2 == false) {  // ถ้าความชื้นไม่สูง
+        if (WET2 == false) {  // ถ้าความชื้นไม่สูง          
           if (!ON2) {
             relay2_onoff(true);
             Blynk.virtualWrite(V2, 1);
-          }
+          }          
         }
         else if (WET2 == true && ON2) { // ความชื้นสูง และ relay เปิด ให้สั่งปิด
           relay2_onoff(false);
           Blynk.virtualWrite(V2, 0);
         }
-      }
+      }      
       else if (ON2) {
         relay2_onoff(false);
         Blynk.virtualWrite(V2, 0);
@@ -916,11 +961,11 @@ void checkvalidtime3()
             Blynk.virtualWrite(V3, 1);
           }
         }
-        else if (WET3 == true && ON3) {
+        else if (WET3 == true && ON3) {          
           relay3_onoff(false);
-          Blynk.virtualWrite(V3, 0);
+          Blynk.virtualWrite(V3, 0);          
         }
-      }
+      }      
       else if (ON3) {
         relay3_onoff(false);
         Blynk.virtualWrite(V3, 0);
@@ -944,11 +989,11 @@ void checkvalidtime4()
           relay4_onoff(false);
           Blynk.virtualWrite(V4, 0);
         }
-      }
+      }      
       else if (ON4) {
         relay4_onoff(false);
         Blynk.virtualWrite(V4, 0);
-      }
+      }      
     }
 }
 
@@ -1157,6 +1202,7 @@ BLYNK_WRITE(V10)
   else
   {
     // Do nothing
+    bstart1 = false;
   }
 
   // Process stop time
@@ -1192,6 +1238,7 @@ BLYNK_WRITE(V10)
   else
   {
     // Do nothing: no stop time was set
+    bstop1 = false;
   }
 
   // Process timezone
@@ -1292,6 +1339,7 @@ BLYNK_WRITE(V11)
   else
   {
     // Do nothing
+    bstart2 = false;
   }
 
   // Process stop time
@@ -1327,6 +1375,7 @@ BLYNK_WRITE(V11)
   else
   {
     // Do nothing: no stop time was set
+    bstop2 = false;
   }
 
   // Process timezone
@@ -1435,6 +1484,7 @@ BLYNK_WRITE(V12)
   else
   {
     // Do nothing
+    bstart3 = false;
   }
 
   // Process stop time
@@ -1476,6 +1526,7 @@ BLYNK_WRITE(V12)
   else
   {
     // Do nothing: no stop time was set
+    bstop3 = false;
   }
 
   // Process timezone
@@ -1491,7 +1542,7 @@ BLYNK_WRITE(V12)
     force3 = false;
 
   }
-  
+
   // weekday();         // day of the week (1-7), Sunday is day 1
   // 1. Sunday, 2. Mon, 3. Tue, ...
   Serial.println(String("Weekday ") + weekday());
@@ -1546,7 +1597,7 @@ BLYNK_WRITE(V12)
         if (stoptime3 <= sunsetTime) { // ? stop at sunrise or stop before sunset
           stoptime3 = stoptime3 + 86400;
         }
-  
+
       }
       else {
         // stop at sunset
@@ -1615,6 +1666,7 @@ BLYNK_WRITE(V13)
   else
   {
     // Do nothing
+    bstart4 = false;
   }
 
   // Process stop time
@@ -1650,6 +1702,7 @@ BLYNK_WRITE(V13)
   else
   {
     // Do nothing: no stop time was set
+    bstop4 = false;
   }
 
   // Process timezone
@@ -2154,7 +2207,7 @@ BLYNK_CONNECTED()
   Blynk.syncVirtual(V12);
   Blynk.syncVirtual(V13);
 
-  
+
   // Synchonize timer zone 1
   Blynk.syncVirtual(V20);
   Blynk.syncVirtual(V21);
