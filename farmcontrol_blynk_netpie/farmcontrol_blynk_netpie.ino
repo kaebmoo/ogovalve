@@ -23,8 +23,9 @@ SOFTWARE.
 
 */
 
-// #define BLYNKLOCAL
-#define ONECHANNEL
+#define BLYNKLOCAL
+// #define ONECHANNEL
+#define FOURCHANNEL
 
 #include "ESP8266WiFi.h"
 #include <BlynkSimpleEsp8266.h>
@@ -55,6 +56,7 @@ SOFTWARE.
 #include <ArduinoJson.h>
 #include <TimeLord.h>
 
+// NAN, THAILAND
 float const LATITUDE = 18.786741;
 float const LONGITUDE = 100.782217;
 
@@ -64,10 +66,16 @@ float const LONGITUDE = 100.782217;
 #define PIN            D2
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(1, PIN, NEO_GRB + NEO_KHZ800);
 
-const int FW_VERSION = 3; // 20180410 20180504
+const int FW_VERSION = 4; // 20180410 20180504
 const char* LASTUPDATE = "2.20180410";
 const char* firmwareUrlBase = "http://www.ogonan.com/ogoupdate/";
+#ifdef ONECHANNEL
+String firmwareName = "farmcontrol_blynk_netpie1ch.ino.d1_mini";
+#elseif FOURCHANNEL
+String firmwareName = "farmcontrol_blynk_netpie4ch.ino.d1_mini";
+#else
 String firmwareName = "farmcontrol_blynk_netpie.ino.d1_mini";
+#endif
 
 // internet control
 // You should get Auth Token in the Blynk App.
@@ -138,6 +146,7 @@ unsigned long stoptime4;
 unsigned long currenttime;
 
 int workingTime, stopPeriod, repeatsTime, timesPerDay;
+int overlap = 0;
 
 unsigned long timezoneOffset;
 time_t sunriseTime, sunsetTime;
@@ -155,7 +164,8 @@ AlarmId alarmIdTime[16] = {dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM
 // Wemos D1 mini
 #define CLK D3
 #define DIO D4
-int ledPin = D4;
+//int ledPin = D4;
+
 byte buttons[] = {D0, D5, D6, D7};  // switch
 #ifdef ONECHANNEL
 int RELAY1 = D1;
@@ -241,8 +251,7 @@ void setup()
 
   pixels.begin(); // This initializes the NeoPixel library.
   pixels.setBrightness(64);
-
-  pinMode(ledPin, OUTPUT);
+  
   Serial.println();
 
   pinMode(RELAY1, OUTPUT);
@@ -394,8 +403,7 @@ void loop()
       // led_status.on();
     }
 
-    // set the LED with the ledState of the variable:
-    // digitalWrite(ledPin, ledState);
+    
   }
 
   #ifdef NETPIE
@@ -832,6 +840,7 @@ void relay3_onoff(boolean set)
     #else
     digitalWrite(RELAY3, HIGH);
     led_tank3.on();
+    Blynk.virtualWrite(V3, 1);
     #endif
     delay(300);
   }
@@ -844,6 +853,7 @@ void relay3_onoff(boolean set)
     #else
     digitalWrite(RELAY3, LOW);
     led_tank3.off();
+    Blynk.virtualWrite(V3, 0);
     #endif
     delay(300);
   }
@@ -912,11 +922,11 @@ void checkvalidtime1()
       if ( (currenttime >= starttime1) && (currenttime <= stoptime1) ) {
         if (WET1 == false) {
           if (!ON1) {
-            relay1_onoff(true);            
+            relay1_onoff(true);
           }
         }
         else if (WET1 == true && ON1) {
-          relay1_onoff(false);          
+          relay1_onoff(false);
         }
       }
       else if (ON1) {
@@ -931,17 +941,17 @@ void checkvalidtime2()
     Serial.println(String("current: ")+currenttime+String(" start2: ")+starttime2+String(" stop2: ")+stoptime2);
     if (bstart2 && bstop2 && bcurrent2 && !force2) {
       if ( (currenttime >= starttime2) && (currenttime <= stoptime2) ) { // ยังอยู่ในเวลาที่ตั้งไว้
-        if (WET2 == false) {  // ถ้าความชื้นไม่สูง          
+        if (WET2 == false) {  // ถ้าความชื้นไม่สูง
           if (!ON2) {
             relay2_onoff(true);
             Blynk.virtualWrite(V2, 1);
-          }          
+          }
         }
         else if (WET2 == true && ON2) { // ความชื้นสูง และ relay เปิด ให้สั่งปิด
           relay2_onoff(false);
           Blynk.virtualWrite(V2, 0);
         }
-      }      
+      }
       else if (ON2) {
         relay2_onoff(false);
         Blynk.virtualWrite(V2, 0);
@@ -958,17 +968,30 @@ void checkvalidtime3()
         if (WET3 == false) {
           if (!ON3) {
             relay3_onoff(true);
-            Blynk.virtualWrite(V3, 1);
+            
           }
         }
-        else if (WET3 == true && ON3) {          
+        else if (WET3 == true && ON3) {
           relay3_onoff(false);
-          Blynk.virtualWrite(V3, 0);          
+          
         }
-      }      
+      }
+      else if (overlap) {
+        if ((currenttime >= starttime3) || (currenttime < stoptime3) ) {
+          if (!ON3) {
+            relay3_onoff(true);
+            
+          }
+        }
+        else if (currenttime >= stoptime3) {
+          if (ON3) {
+            relay3_onoff(false);
+          }
+        }
+      }
       else if (ON3) {
         relay3_onoff(false);
-        Blynk.virtualWrite(V3, 0);
+        
       }
     }
 }
@@ -989,11 +1012,11 @@ void checkvalidtime4()
           relay4_onoff(false);
           Blynk.virtualWrite(V4, 0);
         }
-      }      
+      }
       else if (ON4) {
         relay4_onoff(false);
         Blynk.virtualWrite(V4, 0);
-      }      
+      }
     }
 }
 
@@ -1473,6 +1496,7 @@ BLYNK_WRITE(V12)
     sunriseOnOff = 1;
     bstart3 = true;
     // starttime3
+    starttime3 = sunriseTime;
   }
   else if (t.isStartSunset())
   {
@@ -1480,6 +1504,7 @@ BLYNK_WRITE(V12)
     sunsetOnOff = 1;
     bstart3 = true;
     // starttime3
+    starttime3 = sunsetTime;
   }
   else
   {
@@ -1515,6 +1540,7 @@ BLYNK_WRITE(V12)
     sunriseOnOff = 0;
     bstop3 = true;
     // stoptime3
+    stoptime3 = sunriseTime;
   }
   else if (t.isStopSunset())
   {
@@ -1522,6 +1548,7 @@ BLYNK_WRITE(V12)
     sunsetOnOff = 0;
     bstop3 = true;
     // stoptime3
+    stoptime3 = sunsetTime;
   }
   else
   {
@@ -1540,7 +1567,13 @@ BLYNK_WRITE(V12)
 
   if (bstart3 && bstop3) {
     force3 = false;
-
+    // check overlap
+    if (stoptime3 < starttime3) {
+      overlap = 1;
+    }
+    else {
+      overlap = 0;
+    }
   }
 
   // weekday();         // day of the week (1-7), Sunday is day 1
@@ -1570,6 +1603,7 @@ BLYNK_WRITE(V12)
     bcurrent3 = false;
   }
 
+/*
   if ( (sunriseOnOff != -1) || (sunsetOnOff != -1) ) {
 
     // sunriseOnOff = -1 sunriseOnOff = 1 (start) sunriseOnOff = 0 (stop)
@@ -1608,6 +1642,7 @@ BLYNK_WRITE(V12)
       }
     }
   }
+*/
 
   // setTime((time_t) now());
   String currentTime = String(hour()) + ":" + minute() + ":" + second();
