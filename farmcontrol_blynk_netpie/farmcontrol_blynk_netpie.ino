@@ -168,13 +168,14 @@ AlarmId alarmIdTime[16] = {dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM
 
 byte buttons[] = {D0, D5, D6, D7};  // switch
 #ifdef ONECHANNEL
-int RELAY1 = D1;
+const int RELAY1 = D1;
 #else
-int RELAY1 = D5;
+const int RELAY1 = D5;
 #endif
-int RELAY2 = D6;
-int RELAY3 = D7;
-int RELAY4 = D8;
+const int RELAY2 = D6;
+const int RELAY3 = D7;
+const int RELAY4 = D8;
+const int analogReadPin = A0;               // read for set options Soil Moisture or else ... 
 
 TM1637Display display(CLK, DIO);
 
@@ -308,6 +309,7 @@ void setup()
   upintheair();
   blynk_timer.setInterval(60000L, checkBlynkConnection);
   blynk_timer.setInterval(60000L, syncSchedule);
+  blynk_timer.setInterval(5000L, soilMoistureSensor);
   syncZone2();
   display_zone1();
 
@@ -2263,6 +2265,46 @@ BLYNK_CONNECTED()
   }
 
 }
+
+
+void soilMoistureSensor()
+{
+  int soilMoisture;
+
+  soilMoisture = analogRead(analogReadPin);
+  Serial.print("Analog Read : ");
+  Serial.println(soilMoisture);
+
+  if (soilMoisture > 500) {
+    Serial.println("High Moisture");
+    Serial.println("Soil Moisture: Turn Relay Off");
+    WET3 = true;
+    
+    // if (digitalRead(RELAY3) == HIGH) {
+      // Serial.println("Soil Moisture: Turn Relay Off");
+      //
+      // turnrelay_onoff(HIGH);
+      // delay(300);
+      // Blynk.virtualWrite(V1, 1);
+      // Blynk.syncVirtual(V1);
+      // RelayEvent = true;
+    // }
+  }
+  else {
+    Serial.println("Low Moisture");
+    Serial.println("Soil Moisture: Turn Relay On");
+    WET3 = false;    
+    // if (digitalRead(RELAY1) == LOW) {
+      // Serial.println("Soil Moisture: Turn Relay On");
+      // WET3 = false;
+      // turnrelay_onoff(LOW);
+      // delay(300);
+      // Blynk.virtualWrite(V1, 0);
+      // RelayEvent = false;
+    // }
+  }
+}
+
 
 #ifdef NETPIE
 void onMsghandler(char *topic, uint8_t* msg, unsigned int msglen) {
