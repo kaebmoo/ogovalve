@@ -26,6 +26,7 @@ SOFTWARE.
 #define BLYNKLOCAL
 // #define ONECHANNEL
 #define FOURCHANNEL
+// #define ONDEMANDWIFI
 
 #include "ESP8266WiFi.h"
 #include <BlynkSimpleEsp8266.h>
@@ -175,7 +176,8 @@ const int RELAY1 = D5;
 const int RELAY2 = D6;
 const int RELAY3 = D7;
 const int RELAY4 = D8;
-const int analogReadPin = A0;               // read for set options Soil Moisture or else ... 
+const int analogReadPin = A0;               // read for set options Soil Moisture or else ...
+#define TRIGGER_PIN D0
 
 TM1637Display display(CLK, DIO);
 
@@ -252,9 +254,11 @@ void setup()
 
   pixels.begin(); // This initializes the NeoPixel library.
   pixels.setBrightness(64);
-  
-  Serial.println();
 
+  Serial.println();
+  #ifdef ONDEMANDWIFI
+  pinMode(TRIGGER_PIN, INPUT);
+  #endif
   pinMode(RELAY1, OUTPUT);
   pinMode(RELAY2, OUTPUT);
   pinMode(RELAY3, OUTPUT);
@@ -273,7 +277,30 @@ void setup()
 
   delay(2000);
 
+  #ifdef ONDEMANDWIFI
+  Serial.println();
+  Serial.println(WiFi.SSID());
+  Serial.println(WiFi.psk());
+  String SSID = WiFi.SSID();
+  String PSK = WiFi.psk();
+  WiFi.begin(SSID.c_str(), PSK.c_str());
+  Serial.print("Connecting");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+    // จะออกจากตรงนี้ยังไง?
+    if ( digitalRead(TRIGGER_PIN) == LOW ) {
+      ondemandWiFi();
+    }
+  }
+  Serial.println();
+  Serial.print("Connected, IP address: ");
+  Serial.println(WiFi.localIP());
+  wifi_connected = 0;
+  #else
   wifi_connected = setupWifi();
+  #endif
+
   // wifi_connected = WiFi.begin("Redmi", "12345678"); // WL_CONNECTED
   if (wifi_connected == 0) {
     delay(500);
@@ -344,6 +371,12 @@ void loop()
   int i, blynk_connection;
   uint8_t data[] = { 0x3f, 0x73, 0x79, 0x50 };
 
+  #ifdef ONDEMANDWIFI
+  if ( digitalRead(TRIGGER_PIN) == LOW ) {
+    ondemandWiFi();
+  }
+  #endif
+
   blynk_connection = Blynk.connected();
   if (blynk_connection) {
     Blynk.run();
@@ -405,7 +438,7 @@ void loop()
       // led_status.on();
     }
 
-    
+
   }
 
   #ifdef NETPIE
@@ -585,8 +618,61 @@ void upintheair()
   // ESPhttpUpdate.update("www.ogonan.com", 80, "/ogoupdate/farmcontrol_blynk.ino.d1_mini.bin");
 }
 
+#ifdef ONDEMANDWIFI
+void ondemandWiFi()
+{
+  WiFiManager wifiManager;
+  String apName;
 
-int setupWifi() {
+  EEPROM.begin(512);
+  readEEPROM(auth, 60, 32);
+  Serial.print("auth token : ");
+  Serial.println(auth);
+  int saved = eeGetInt(500);
+  if (saved == 6550) {
+    strcpy(c_auth, auth);
+  }
+  WiFiManagerParameter custom_c_auth("c_auth", "Auth Token", c_auth, 37);
+  wifiManager.setSaveConfigCallback(saveConfigCallback);
+  wifiManager.addParameter(&custom_c_auth);
+
+
+  delay(100);
+  //sets timeout until configuration portal gets turned off
+  //useful to make it all retry or go to sleep
+  //in seconds
+  wifiManager.setTimeout(300);
+
+
+  apName = "ogoControl-"+String(ESP.getChipId());
+
+  if (!wifiManager.startConfigPortal(apName.c_str())) {
+    Serial.println("failed to connect and hit timeout");
+    delay(3000);
+    //reset and try again, or maybe put it to deep sleep
+    ESP.reset();
+    delay(5000);
+  }
+  //if you get here you have connected to the WiFi
+  Serial.println("connected...yeey :)");
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.print("IP address: ");
+  Serial.println(WiFi.localIP());
+
+  if (shouldSaveConfig) {
+    strcpy(c_auth, custom_c_auth.getValue());
+    strcpy(auth, c_auth);
+    Serial.print("auth token : ");
+    Serial.println(auth);
+    writeEEPROM(auth, 60, 32);
+    eeWriteInt(500, 6550);
+  }
+}
+#endif
+
+int setupWifi()
+{
 
   WiFiManager wifiManager;
   String APName;
@@ -623,8 +709,6 @@ int setupWifi() {
 
   //if you get here you have connected to the WiFi
   Serial.println("connected...yeey :)");
-
-
 
   Serial.println("");
   Serial.println("WiFi connected");
@@ -970,19 +1054,19 @@ void checkvalidtime3()
         if (WET3 == false) {
           if (!ON3) {
             relay3_onoff(true);
-            
+
           }
         }
         else if (WET3 == true && ON3) {
           relay3_onoff(false);
-          
+
         }
       }
       else if (overlap) {
         if ((currenttime >= starttime3) || (currenttime < stoptime3) ) {
           if (!ON3) {
             relay3_onoff(true);
-            
+
           }
         }
         else if (currenttime >= stoptime3) {
@@ -993,7 +1077,7 @@ void checkvalidtime3()
       }
       else if (ON3) {
         relay3_onoff(false);
-        
+
       }
     }
 }
@@ -2279,7 +2363,7 @@ void soilMoistureSensor()
     Serial.println("High Moisture");
     Serial.println("Soil Moisture: Turn Relay Off");
     WET3 = true;
-    
+
     // if (digitalRead(RELAY3) == HIGH) {
       // Serial.println("Soil Moisture: Turn Relay Off");
       //
@@ -2293,7 +2377,7 @@ void soilMoistureSensor()
   else {
     Serial.println("Low Moisture");
     Serial.println("Soil Moisture: Turn Relay On");
-    WET3 = false;    
+    WET3 = false;
     // if (digitalRead(RELAY1) == LOW) {
       // Serial.println("Soil Moisture: Turn Relay On");
       // WET3 = false;
