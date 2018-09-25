@@ -31,6 +31,7 @@
  * github.com/kaebmoo
  * @date 2018 09 25
  * 
+ * first version test on Arduino UNO
  * 
  */
 
@@ -66,9 +67,11 @@ void loop() {
 
   if (Liquid_level0 == 0 && Liquid_level1 == 0) {
     relayOn();
+    Serial.println("Pump On");
   }
   else if (Liquid_level0 == 1 && Liquid_level1 == 1) {
     relayOff();
+    Serial.println("Pump Off");
   }
 }
 
