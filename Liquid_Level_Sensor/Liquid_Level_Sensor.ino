@@ -61,7 +61,6 @@ void setup() {
  pinMode(sensor1,INPUT);
  pinMode(LED_BUILTIN, OUTPUT);
  pinMode(RELAY1, OUTPUT);
-
 }
 
 
