@@ -1,20 +1,12 @@
 /***************************************************
 
-<<<<<<< HEAD
 * Liquid Level Sensor-XKC-Y25-T12V
-=======
-* Liquid Level Sensor-XKC-Y25-T12V 
->>>>>>> master
 
 * ****************************************************
 
 * This example is to get liquid level
 
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> master
 
 * @author jackli(Jack.li@dfrobot.com)
 
@@ -22,11 +14,7 @@
 
 * @date  2016-1-30
 
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> master
 
 * GNU Lesser General Public License.
 
@@ -37,7 +25,6 @@
 * ****************************************************/
 
 /*
-<<<<<<< HEAD
  *
  *
  * modify by P. Nivatyakul
@@ -62,20 +49,6 @@
   #define sensor1 D6
 #endif
 
-=======
- * 
- * 
- * modify by P. Nivatyakul
- * github.com/kaebmoo
- * @date 2018 09 25
- * 
- * first version test on Arduino UNO
- * 
- */
-
-#define RELAY1  7
->>>>>>> master
-
 int Liquid_level0 = 0;
 int Liquid_level1 = 0;
 
@@ -83,42 +56,25 @@ void setup() {
 
  Serial.begin(9600);
 
-<<<<<<< HEAD
  pinMode(sensor0,INPUT);
  pinMode(sensor1,INPUT);
  pinMode(LED_BUILTIN, OUTPUT);
  pinMode(RELAY1, OUTPUT);
-=======
- pinMode(5,INPUT);
- pinMode(6,INPUT);
- pinMode(LED_BUILTIN, OUTPUT);
- pinMode(RELAY1, OUTPUT);
 
->>>>>>> master
 }
 
 
 void loop() {
 
-<<<<<<< HEAD
   Liquid_level0 = digitalRead(sensor0);
   Liquid_level1 = digitalRead(sensor1);
 
-=======
-  Liquid_level0 = digitalRead(5);
-  Liquid_level1 = digitalRead(6);
-  
->>>>>>> master
   Serial.print("Liquid level 0 = ");
   Serial.print(Liquid_level0,DEC);
   Serial.print("\t");
   Serial.print("Liquid level 1 = ");
   Serial.println(Liquid_level1,DEC);
-<<<<<<< HEAD
 
-=======
-  
->>>>>>> master
   delay(1000);
 
   if (Liquid_level0 == 0 && Liquid_level1 == 0) {
