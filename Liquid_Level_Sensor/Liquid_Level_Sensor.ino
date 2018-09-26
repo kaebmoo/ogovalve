@@ -3,7 +3,7 @@
 <<<<<<< HEAD
 * Liquid Level Sensor-XKC-Y25-T12V
 =======
-* Liquid Level Sensor-XKC-Y25-T12V 
+* Liquid Level Sensor-XKC-Y25-T12V
 >>>>>>> master
 
 * ****************************************************
@@ -13,7 +13,7 @@
 <<<<<<< HEAD
 
 =======
-  
+
 >>>>>>> master
 
 * @author jackli(Jack.li@dfrobot.com)
@@ -25,7 +25,7 @@
 <<<<<<< HEAD
 
 =======
-  
+
 >>>>>>> master
 
 * GNU Lesser General Public License.
@@ -63,14 +63,14 @@
 #endif
 
 =======
- * 
- * 
+ *
+ *
  * modify by P. Nivatyakul
  * github.com/kaebmoo
  * @date 2018 09 25
- * 
+ *
  * first version test on Arduino UNO
- * 
+ *
  */
 
 #define RELAY1  7
@@ -107,7 +107,7 @@ void loop() {
 =======
   Liquid_level0 = digitalRead(5);
   Liquid_level1 = digitalRead(6);
-  
+
 >>>>>>> master
   Serial.print("Liquid level 0 = ");
   Serial.print(Liquid_level0,DEC);
@@ -117,7 +117,7 @@ void loop() {
 <<<<<<< HEAD
 
 =======
-  
+
 >>>>>>> master
   delay(1000);
 
