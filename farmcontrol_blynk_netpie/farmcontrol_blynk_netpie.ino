@@ -107,14 +107,23 @@ boolean WET1 = false;
 boolean WET2 = false;
 boolean WET3 = false;
 boolean WET4 = false;
+boolean WET[8] = {false,false,false,false,false,false,false,false};
 
 boolean ON1 = false;
 boolean ON2 = false;
 boolean ON3 = false;
 boolean ON4 = false;
+boolean ON[8] = {false,false,false,false,false,false,false,false};
 
 int sunriseOnOff = -1;
 int sunsetOnOff = -1;
+
+boolean bstart[8] = {false,false,false,false,false,false,false,false};
+boolean bstop[8] = {false,false,false,false,false,false,false,false};
+boolean bcurrent[8] = {false,false,false,false,false,false,false,false};
+boolean force[8] = {false,false,false,false,false,false,false,false};
+unsigned long startime[8];
+unsigned long stoptime[8];
 
 boolean bstart1 = false;
 boolean bstop1 = false;
@@ -288,7 +297,7 @@ void setup()
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
-    // จะออกจากตรงนี้ยังไง?
+
     if ( digitalRead(TRIGGER_PIN) == LOW ) {
       ondemandWiFi();
     }
@@ -999,6 +1008,28 @@ void syncSchedule()
 
 }
 
+void checkValidTime()
+{
+  int iTime;
+
+  for (iTime = 0; iTime < 8; iTime++) {
+    if (bstart[iTime] && bstop[iTime] && bcurrent[iTime] && !force[iTime]) {
+      if ((currenttime >= starttime[iTime]) && (currenttime <= stoptime[iTime])) {
+        if (WET1 == false) {
+          if (!ON1) {
+            relay1_onoff(true);
+          }
+        }
+        else if (WET1 == true && ON1) {
+          relay1_onoff(false);
+        }
+      }
+      else if (ON1) {
+        relay1_onoff(false);
+      }
+    }
+  } // for loop
+}
 
 void checkvalidtime1()
 {
@@ -1689,47 +1720,6 @@ BLYNK_WRITE(V12)
     bcurrent3 = false;
   }
 
-/*
-  if ( (sunriseOnOff != -1) || (sunsetOnOff != -1) ) {
-
-    // sunriseOnOff = -1 sunriseOnOff = 1 (start) sunriseOnOff = 0 (stop)
-    if (sunriseOnOff != -1 && bcurrent3 == true) {
-      if (sunriseOnOff) {
-        // start at sunrise
-        starttime3 = sunriseTime;
-        if (stoptime3 <= sunriseTime) {
-          stoptime3 = stoptime3 + 86400;  // + 24hr
-        }
-      }
-      else {
-        // stop at sunrise
-        stoptime3 = sunriseTime;
-        if (starttime3 >= sunriseTime) {
-          stoptime3 = sunriseTime + 86400;
-        }
-      }
-    }
-
-    if (sunsetOnOff != -1 && bcurrent3 == true) {
-      if (sunsetOnOff) {
-        // start at sunset
-        starttime3 = sunsetTime;
-        if (stoptime3 <= sunsetTime) { // ? stop at sunrise or stop before sunset
-          stoptime3 = stoptime3 + 86400;
-        }
-
-      }
-      else {
-        // stop at sunset
-        stoptime3 = sunsetTime;
-        if (starttime3 >= sunsetTime) {
-          stoptime3 = sunsetTime + 86400;
-        }
-      }
-    }
-  }
-*/
-
   // setTime((time_t) now());
   String currentTime = String(hour()) + ":" + minute() + ":" + second();
   Serial.print("Current time: ");
@@ -1930,99 +1920,6 @@ void syncSunriseSunset()
   sunsetTime = t_of_day + sunsetTime;
   Serial.println(String("Sunrise Local timezone: ") + sunriseTime);
   Serial.println(String("Sunset Local timezone: ") + sunsetTime);
-
-
-  /*
-  String webhookdata = param.asStr();
-  StaticJsonBuffer<1024> jsonBuffer;
-  struct tm sunrise_time, sunset_time;
-  char buf[255];
-
-  memset(&sunrise_time, 0, sizeof(struct tm));
-  memset(&sunset_time, 0, sizeof(struct tm));
-  memset(&buf, 0, sizeof(buf));
-  sunrise_time.tm_year = year()-1900;
-  sunrise_time.tm_mon= month()-1;
-  sunrise_time.tm_mday = day();
-  sunrise_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
-  sunriseTime = mktime(&sunrise_time) - timezoneOffset;
-
-  sunset_time.tm_year = year()-1900;
-  sunset_time.tm_mon= month()-1;
-  sunset_time.tm_mday = day();
-  sunset_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
-  sunsetTime = mktime(&sunset_time) - timezoneOffset;
-
-  Serial.println(webhookdata);
-  JsonObject& root = jsonBuffer.parseObject(webhookdata);
-  if (!root.success()) {
-    Serial.println("parseObject() failed");
-    return;
-  }
-  String results = root["status"];
-  Serial.println(String("Status: ") + results);
-
-  String sunrise = root["results"]["sunrise"];
-  String sunset = root["results"]["sunset"];
-
-  Serial.println(String("Sunrise: ") + sunrise);
-  Serial.println(String("Sunset: ") + sunset);
-
-
-  strptime(sunrise.c_str(), "H:%M:%S %p", &sunrise_time);
-  sunriseTime = mktime(&sunrise_time);
-  Serial.println(String("Sunrise time: ") + sunriseTime);
-  sunriseTime += timezoneOffset;
-  Serial.println(String("Sunrise Local timezone: ") + sunriseTime);
-
-  sunrise_time = *localtime(&sunriseTime);
-  strftime(buf, sizeof(buf), "%H:%M", &sunrise_time);
-  Serial.println(String("Sunrise time: ") + buf);
-  Serial.println(String("Hour: ") + sunrise_time.tm_hour);
-  Serial.println(String("Minute: ") + sunrise_time.tm_min);
-
-  strptime(sunset.c_str(), "%H:%M:%S %p", &sunset_time);
-  sunsetTime = mktime(&sunset_time);
-  Serial.println(String("Sunset time: ") + sunsetTime);
-  sunsetTime += timezoneOffset;
-  Serial.println(String("Sunset Local timezone: ") + sunsetTime);
-
-  sunset_time = *localtime(&sunsetTime);
-  strftime(buf, sizeof(buf), "%H:%M", &sunset_time);
-  Serial.println(String("Sunset time: ") + buf);
-  Serial.println(String("Hour: ") + sunset_time.tm_hour);
-  Serial.println(String("Minute: ") + sunset_time.tm_min);
-
-  */
-
-    /*
-    if (alarmIdSunrise == dtINVALID_ALARM_ID) {
-      alarmIdSunrise = Alarm.alarmOnce(sunrise_time.tm_hour, sunrise_time.tm_min, 0, sunriseCall);
-      Serial.println("sunriseCall Activated");
-    }
-    else {
-      Alarm.free(alarmIdSunrise);
-      alarmIdSunrise = dtINVALID_ALARM_ID;
-      alarmIdSunrise = Alarm.alarmOnce(sunrise_time.tm_hour, sunrise_time.tm_min, 0, sunriseCall);
-      Serial.println("sunriseCall Activated");
-    }
-    */
-
-
-
-
-    /*
-    if (alarmIdSunset == dtINVALID_ALARM_ID) {
-      alarmIdSunset = Alarm.alarmOnce(sunset_time.tm_hour, sunset_time.tm_min, 0, sunsetCall);
-      Serial.println("sunsetCall Activated");
-    }
-    else {
-      Alarm.free(alarmIdSunset);
-      alarmIdSunset = dtINVALID_ALARM_ID;
-      alarmIdSunset = Alarm.alarmOnce(sunset_time.tm_hour, sunset_time.tm_min, 0, sunsetCall);
-      Serial.println("sunsetCall Activated");
-    }
-    */
 
 }
 
@@ -2364,28 +2261,12 @@ void soilMoistureSensor()
     Serial.println("Soil Moisture: Turn Relay Off");
     WET3 = true;
 
-    // if (digitalRead(RELAY3) == HIGH) {
-      // Serial.println("Soil Moisture: Turn Relay Off");
-      //
-      // turnrelay_onoff(HIGH);
-      // delay(300);
-      // Blynk.virtualWrite(V1, 1);
-      // Blynk.syncVirtual(V1);
-      // RelayEvent = true;
-    // }
   }
   else {
     Serial.println("Low Moisture");
     Serial.println("Soil Moisture: Turn Relay On");
     WET3 = false;
-    // if (digitalRead(RELAY1) == LOW) {
-      // Serial.println("Soil Moisture: Turn Relay On");
-      // WET3 = false;
-      // turnrelay_onoff(LOW);
-      // delay(300);
-      // Blynk.virtualWrite(V1, 0);
-      // RelayEvent = false;
-    // }
+
   }
 }
 
