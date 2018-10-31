@@ -23,6 +23,15 @@ SOFTWARE.
 
 */
 
+/*
+ * 
+ * Hardware: Wemos D1 mini
+ * Relay 1-4 Channel
+ * SoilWatch 10
+ * 
+ * 
+*/
+
 #define BLYNKLOCAL
 // #define ONECHANNEL
 #define FOURCHANNEL
