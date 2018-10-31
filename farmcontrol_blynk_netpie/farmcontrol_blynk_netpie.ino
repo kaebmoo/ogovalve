@@ -122,7 +122,7 @@ boolean bstart[8] = {false,false,false,false,false,false,false,false};
 boolean bstop[8] = {false,false,false,false,false,false,false,false};
 boolean bcurrent[8] = {false,false,false,false,false,false,false,false};
 boolean force[8] = {false,false,false,false,false,false,false,false};
-unsigned long startime[8];
+unsigned long starttime[8];
 unsigned long stoptime[8];
 
 boolean bstart1 = false;
@@ -351,7 +351,7 @@ void setup()
   blynk_timer.setInterval(60000L, checkBlynkConnection);
   blynk_timer.setInterval(60000L, syncSchedule);
   blynk_timer.setInterval(5000L, soilMoistureSensor);
-  syncZone2();
+  syncZone();
   display_zone1();
 
   #ifdef NETPIE
@@ -1871,8 +1871,18 @@ BLYNK_WRITE(V13)
   Serial.println();
 }
 
-void syncZone2()
+void syncZone()
 {
+  // Synchonize timer zone 1
+  Blynk.syncVirtual(V20);
+  Blynk.syncVirtual(V21);
+  Blynk.syncVirtual(V22);
+  Blynk.syncVirtual(V23);
+  Blynk.syncVirtual(V24);
+  Blynk.syncVirtual(V25);
+  Blynk.syncVirtual(V26);
+  Blynk.syncVirtual(V27);
+  
   // assigned zone 2 repeats time
   Blynk.syncVirtual(V15);
   Blynk.syncVirtual(V16);
@@ -2128,7 +2138,7 @@ int callAlarmTimer(unsigned int startHour, unsigned int startMin, unsigned int s
   }
   else {
     Alarm.free(alarmIdTime[timeId]);
-    alarmIdTime[timeId] = dtINVALID_ALARM_ID;
+    // alarmIdTime[timeId] = dtINVALID_ALARM_ID;
     alarmIdTime[timeId] = Alarm.alarmOnce(startHour, startMin, 0, zone1On);
     Serial.println("Start Time Activated");
   }
@@ -2139,7 +2149,7 @@ int callAlarmTimer(unsigned int startHour, unsigned int startMin, unsigned int s
   }
   else {
     Alarm.free(alarmIdTime[timeId+8]);
-    alarmIdTime[timeId+8] = dtINVALID_ALARM_ID;
+    // alarmIdTime[timeId+8] = dtINVALID_ALARM_ID;
     alarmIdTime[timeId+8] = Alarm.alarmOnce(stopHour, stopMin, 0, zone1Off);
     Serial.println("Stop Time Activated");
   }
@@ -2178,6 +2188,8 @@ BLYNK_WRITE(V17)
   Serial.println();
 }
 
+int timerID = dtINVALID_ALARM_ID;
+
 BLYNK_WRITE(V40)
 {
   // เวลาที่เริ่มทำงาน start time on zone 2
@@ -2194,13 +2206,19 @@ BLYNK_WRITE(V40)
     Serial.println(t.getStartMinute());
   }
 
-  Alarm.alarmOnce(t.getStartHour(), t.getStartMinute(), 0, zone2start);
+  if (timerID == dtINVALID_ALARM_ID) {
+    timerID = Alarm.alarmOnce(t.getStartHour(), t.getStartMinute(), 0, zone2start);
+  }
+  else {
+    Alarm.free(timerID);
+    timerID = Alarm.alarmOnce(t.getStartHour(), t.getStartMinute(), 0, zone2start);
+  }
 
 }
 
 BLYNK_READ(V30)
 {
-  Blynk.virtualWrite(V30, mappedValue);
+  Blynk.virtualWrite(V30, soilMoisture);
 }
 
 BLYNK_READ(V31)
@@ -2249,12 +2267,18 @@ BLYNK_CONNECTED()
   Blynk.syncVirtual(V26);
   Blynk.syncVirtual(V27);
 
+  // Synchonize timer zone 2
+  Blynk.syncVirtual(V15);
+  Blynk.syncVirtual(V16);
+  Blynk.syncVirtual(V17);
+  Blynk.syncVirtual(V40);
+
   // add schedule check at midnight
   if(!schedule) {
     Serial.println("Sync. Schedule");
     // Alarm.alarmRepeat(0,0,0, syncSchedule);
     Alarm.alarmRepeat(0,0,0, syncSunriseSunset);
-    Alarm.alarmRepeat(0,0,0, syncZone2);
+    Alarm.alarmRepeat(0,0,0, syncZone);
     schedule = true;
   }
 
@@ -2270,6 +2294,7 @@ void soilMoistureSensor()
 
   mappedValue = map(soilMoisture, minADC, maxADC, 0, 100);
 
+
   // print mapped results to the serial monitor:
   Serial.print("Moisture value = " );
   Serial.println(mappedValue);
@@ -2278,13 +2303,13 @@ void soilMoistureSensor()
     Serial.println("High Moisture");
     Serial.println("Soil Moisture: Turn Relay Off");
     WET3 = true;
-
+    WET1 = true;
   }
   else {
     Serial.println("Low Moisture");
     Serial.println("Soil Moisture: Turn Relay On");
     WET3 = false;
-
+    WET1 = false;
   }
 }
 
