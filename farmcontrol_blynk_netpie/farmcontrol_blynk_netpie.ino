@@ -243,6 +243,11 @@ char *iamWet3 = "/ogoControl/room/aiJZ77WVXc5YIP0HVrOtvTyzHMiPlR07/3/wet";
 char *iamWet4 = "/ogoControl/room/aiJZ77WVXc5YIP0HVrOtvTyzHMiPlR07/4/wet";
 char *ALIAS = "ogoControl-4ch-Somboon";
 
+// soil moisture variables
+int minADC = 0;                       // replace with min ADC value read in air
+int maxADC = 928;                     // replace with max ADC value read fully submerged in water
+
+
 void setup()
 {
   byte i;
@@ -2250,13 +2255,19 @@ BLYNK_CONNECTED()
 
 void soilMoistureSensor()
 {
-  int soilMoisture;
+  int soilMoisture, mappedValue;
 
   soilMoisture = analogRead(analogReadPin);
   Serial.print("Analog Read : ");
-  Serial.println(soilMoisture);
+  Serial.print(soilMoisture);
+  Serial.print(", " );
 
-  if (soilMoisture > 500) {
+  mappedValue = map(soilMoisture, minADC, maxADC, 0, 100);
+  // print mapped results to the serial monitor:
+  Serial.print("Moisture value = " );
+  Serial.println(mappedValue);
+
+  if (mappedValue > 50) {
     Serial.println("High Moisture");
     Serial.println("Soil Moisture: Turn Relay Off");
     WET3 = true;
