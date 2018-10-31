@@ -246,7 +246,7 @@ char *ALIAS = "ogoControl-4ch-Somboon";
 // soil moisture variables
 int minADC = 0;                       // replace with min ADC value read in air
 int maxADC = 928;                     // replace with max ADC value read fully submerged in water
-
+int soilMoisture, mappedValue;
 
 void setup()
 {
@@ -2198,7 +2198,15 @@ BLYNK_WRITE(V40)
 
 }
 
+BLYNK_READ(V30)
+{
+  Blynk.virtualWrite(V30, mappedValue);
+}
 
+BLYNK_READ(V31)
+{
+  Blynk.virtualWrite(V31, mappedValue);
+}
 
 
 
@@ -2255,14 +2263,13 @@ BLYNK_CONNECTED()
 
 void soilMoistureSensor()
 {
-  int soilMoisture, mappedValue;
-
   soilMoisture = analogRead(analogReadPin);
   Serial.print("Analog Read : ");
   Serial.print(soilMoisture);
   Serial.print(", " );
 
   mappedValue = map(soilMoisture, minADC, maxADC, 0, 100);
+
   // print mapped results to the serial monitor:
   Serial.print("Moisture value = " );
   Serial.println(mappedValue);
