@@ -255,6 +255,7 @@ char *ALIAS = "ogoControl-4ch-Somboon";
 // soil moisture variables
 int minADC = 0;                       // replace with min ADC value read in air
 int maxADC = 928;                     // replace with max ADC value read fully submerged in water
+int soilMoistureSetPoint = 50;
 int soilMoisture, mappedValue;
 
 void setup()
@@ -2235,6 +2236,13 @@ BLYNK_READ(V31)
   Blynk.virtualWrite(V31, mappedValue);
 }
 
+BLYNK_WRITE(V32)
+{
+  soilMoistureSetPoint = param.asInt();
+
+  Serial.print("Soil Moisture setpoint: ");
+  Serial.println(soilMoistureSetPoint);
+}
 
 
 BLYNK_CONNECTED()
@@ -2308,7 +2316,7 @@ void soilMoistureSensor()
   Serial.print("Moisture value = " );
   Serial.println(mappedValue);
 
-  if (mappedValue > 50) {
+  if (mappedValue > soilMoistureSetPoint) {
     Serial.println("High Moisture");
     Serial.println("Soil Moisture: Turn Relay Off");
     WET3 = true;
