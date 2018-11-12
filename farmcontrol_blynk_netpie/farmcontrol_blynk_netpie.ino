@@ -24,12 +24,12 @@ SOFTWARE.
 */
 
 /*
- * 
+ *
  * Hardware: Wemos D1 mini
  * Relay 1-4 Channel
  * SoilWatch 10
- * 
- * 
+ *
+ *
 */
 
 #define BLYNKLOCAL
@@ -572,6 +572,7 @@ void checkBlynkConnection() {
     if (blynkreconnect >= 10) {
       // delay(60000);
       // ESP.reset();
+      blynkreconnect = 0;
     }
   }
 
@@ -1892,7 +1893,7 @@ void syncZone()
   Blynk.syncVirtual(V25);
   Blynk.syncVirtual(V26);
   Blynk.syncVirtual(V27);
-  
+
   // assigned zone 2 repeats time
   Blynk.syncVirtual(V15);
   Blynk.syncVirtual(V16);
