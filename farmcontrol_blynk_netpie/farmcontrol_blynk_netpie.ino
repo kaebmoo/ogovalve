@@ -109,52 +109,56 @@ int afterState1 = -1;
 int afterState2 = -1;
 int afterState3 = -1;
 int working = 0;
-boolean automode = false;
+bool automode = false;
 int operation = 0;
 bool blynkConnectedResult = false;
 
-boolean schedule = false;
-boolean WET1 = false;
-boolean WET2 = false;
-boolean WET3 = false;
-boolean WET4 = false;
-boolean WET[8] = {false,false,false,false,false,false,false,false};
+bool schedule = false; // run once per day
 
-boolean ON1 = false;
-boolean ON2 = false;
-boolean ON3 = false;
-boolean ON4 = false;
-boolean ON[8] = {false,false,false,false,false,false,false,false};
+bool _schedule1, _schedule2, _schedule3, _schedule4;  // check relay #1, #2, #3, #4 state 
+bool zone2Pattern = false;
+bool WET1 = false;
+bool WET2 = false;
+bool WET3 = false;
+bool WET4 = false;
+bool WET[8] = {false,false,false,false,false,false,false,false};
+
+bool ON1 = false;
+bool ON2 = false;
+bool ON3 = false;
+bool ON4 = false;
+bool ON[8] = {false,false,false,false,false,false,false,false};
+
 
 int sunriseOnOff = -1;
 int sunsetOnOff = -1;
 
-boolean bstart[8] = {false,false,false,false,false,false,false,false};
-boolean bstop[8] = {false,false,false,false,false,false,false,false};
-boolean bcurrent[8] = {false,false,false,false,false,false,false,false};
-boolean force[8] = {false,false,false,false,false,false,false,false};
+bool bstart[8] = {false,false,false,false,false,false,false,false};
+bool bstop[8] = {false,false,false,false,false,false,false,false};
+bool bcurrent[8] = {false,false,false,false,false,false,false,false};
+bool force[8] = {false,false,false,false,false,false,false,false};
 unsigned long starttime[8];
 unsigned long stoptime[8];
 
-boolean bstart1 = false;
-boolean bstop1 = false;
-boolean bcurrent1 = false;
-boolean force1 = false;
+bool bstart1 = false;
+bool bstop1 = false;
+bool bcurrent1 = false;
+bool force1 = false;
 
-boolean bstart2 = false;
-boolean bstop2 = false;
-boolean bcurrent2 = false;
-boolean force2 = false;
+bool bstart2 = false;
+bool bstop2 = false;
+bool bcurrent2 = false;
+bool force2 = false;
 
-boolean bstart3 = false;
-boolean bstop3 = false;
-boolean bcurrent3 = false;
-boolean force3 = false;
+bool bstart3 = false;
+bool bstop3 = false;
+bool bcurrent3 = false;
+bool force3 = false;
 
-boolean bstart4 = false;
-boolean bstop4 = false;
-boolean bcurrent4 = false;
-boolean force4 = false;
+bool bstart4 = false;
+bool bstop4 = false;
+bool bcurrent4 = false;
+bool force4 = false;
 
 unsigned long starttime1;
 unsigned long stoptime1;
@@ -340,7 +344,7 @@ void setup()
     Blynk.config(auth);  // in place of Blynk.begin(auth, ssid, pass);
     #endif
     Serial.print("Blynk connecting : ");
-    boolean result = Blynk.connect(3333);  // timeout set to 10 seconds and then continue without Blynk, 3333 is 10 seconds because Blynk.connect is in 3ms units.
+    bool result = Blynk.connect(3333);  // timeout set to 10 seconds and then continue without Blynk, 3333 is 10 seconds because Blynk.connect is in 3ms units.
     Serial.println(result);
     if(!Blynk.connected()) {
       Serial.println("Not connected to Blynk server");
@@ -356,18 +360,23 @@ void setup()
     Serial.println("WiFi not connect");
   }
 
-  timer1.every(1000L, checkvalidtime1);
-  timer2.every(1000L, checkvalidtime2);
-  timer3.every(1000L, checkvalidtime3);
-  timer4.every(1000L, checkvalidtime4);
+  timer1.every(1000L, displayStatus);
+  // timer2.every(1000L, checkvalidtime2);
+  // timer3.every(1000L, checkvalidtime3);
+  // timer4.every(1000L, checkvalidtime4);
   // timer_display.every(1000L, display_zone1, 1);
 
   upintheair();
   blynk_timer.setInterval(60000L, checkBlynkConnection);
   blynk_timer.setInterval(60000L, syncSchedule);
   blynk_timer.setInterval(5000L, soilMoistureSensor);
+  
   syncZone();
   display_zone1();
+
+  delay(1000);
+  soilMoistureSensor();
+  delay(1000);
 
   #ifdef NETPIE
   microgear.setEEPROMOffset(512);
@@ -432,8 +441,14 @@ void loop()
 
   Alarm.delay(0);
   currenttime = (unsigned long) now();
-  relayStatus();
+  
+  checkvalidtime1();
+  checkvalidtime2();
+  checkvalidtime3();
+  checkvalidtime4();
 
+  relayStatus();
+  
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= interval) {
     // save the last time you blinked the LED
@@ -492,9 +507,21 @@ void relayStatus()
 {
   int schedule0, schedule1, schedule2, schedule3;
 
+  if (_schedule1) {
+    if (!ON1) {
+      relay1_onoff(true);
+    }
+  }
+  else {
+    if (ON1) {
+      Serial.println("Relay 1 OFF. relayStatus()");
+      relay1_onoff(false);
+    }
+  }
+
   schedule0 = switch2_1.getRelayState();
   schedule1 = switch2_2.getRelayState();
-  if (schedule0 || schedule1) {
+  if (schedule0 || schedule1 || _schedule2) {
     if (!ON2) {
       // relayOn();
       relay2_onoff(true);
@@ -511,7 +538,7 @@ void relayStatus()
   schedule1 = switch3_2.getRelayState();
   schedule2 = switch3_3.getRelayState();
   schedule3 = switch3_4.getRelayState();
-  if (schedule0 || schedule1 || schedule2 || schedule3) {
+  if (schedule0 || schedule1 || schedule2 || schedule3 || _schedule3) {
     if (!ON3) {
       // relayOn();
       relay3_onoff(true);
@@ -528,7 +555,7 @@ void relayStatus()
   schedule1 = switch4_2.getRelayState();
   schedule2 = switch4_3.getRelayState();
   schedule3 = switch4_4.getRelayState();
-  if (schedule0 || schedule1 || schedule2 || schedule3) {
+  if (schedule0 || schedule1 || schedule2 || schedule3 || _schedule4) {
     if (!ON4) {
       // relayOn();
       relay4_onoff(true);
@@ -540,6 +567,26 @@ void relayStatus()
       relay4_onoff(false);
     }
   }
+}
+
+void displayStatus()
+{
+  Serial.println(String("start1: ")+bstart1+String(" stop1: ")+bstop1+String(" current1: ")+bcurrent1+String(" force1: ")+force1);
+  Serial.println(String("current: ")+currenttime+String(" start1: ")+starttime1+String(" stop1: ")+stoptime1);
+  Serial.println(String("ON1: ")+ON1+String(" WET1: ")+WET1);
+
+  Serial.println(String("start2: ")+bstart2+String(" stop2: ")+bstop2+String(" current2: ")+bcurrent2+String(" force2: ")+force2);
+  Serial.println(String("current: ")+currenttime+String(" start2: ")+starttime2+String(" stop2: ")+stoptime2);
+  Serial.println(String("ON2: ")+ON2+String(" WET2: ")+WET2);
+
+  Serial.println(String("start3: ")+bstart3+String(" stop3: ")+bstop3+String(" current3: ")+bcurrent3+String(" force3: ")+force3);
+  Serial.println(String("current: ")+currenttime+String(" start3: ")+starttime3+String(" stop3: ")+stoptime3);
+  Serial.println(String("ON3: ")+ON3+String(" WET3: ")+WET3);
+
+  Serial.println(String("start4: ")+bstart4+String(" stop4: ")+bstop4+String(" current4: ")+bcurrent4+String(" force4: ")+force4);
+  Serial.println(String("current: ")+currenttime+String(" start4: ")+starttime4+String(" stop4: ")+stoptime4);
+  Serial.println(String("ON4: ")+ON4+String(" WET4: ")+WET4);
+  
 }
 
 
@@ -559,7 +606,7 @@ void display_zone1()
     sequence_id = timer_sequence.after(500L, display_zone2);
   }
 
-  Serial.println(String("Sequence ID Zone 1: ") + sequence_id);
+  // Serial.println(String("Sequence ID Zone 1: ") + sequence_id);
 }
 
 void display_zone2()
@@ -576,7 +623,7 @@ void display_zone2()
     sequence_id = timer_sequence.after(500L, display_zone3);
   }
 
-  Serial.println(String("Sequence ID Zone 2: ") + sequence_id);
+  // Serial.println(String("Sequence ID Zone 2: ") + sequence_id);
 }
 
 void display_zone3()
@@ -593,7 +640,7 @@ void display_zone3()
     sequence_id = timer_sequence.after(500L, display_zone4);
   }
 
-  Serial.println(String("Sequence ID Zone 3: ") + sequence_id);
+  // Serial.println(String("Sequence ID Zone 3: ") + sequence_id);
 }
 
 void display_zone4()
@@ -610,7 +657,7 @@ void display_zone4()
     sequence_id = timer_sequence.after(500L, display_zone1);
   }
 
-  Serial.println(String("Sequence ID Zone 4: ") + sequence_id);
+  // Serial.println(String("Sequence ID Zone 4: ") + sequence_id);
 }
 
 void checkBlynkConnection() {
@@ -926,18 +973,19 @@ void check_switches()
 // d  101 1110
 
 
-void relay1_onoff(boolean set)
+void relay1_onoff(bool set)
 {
   uint8_t data[] = { 0x78, 0x00, 0x00, 0x00 }; // t
   display.setSegments(data);
   display.showNumberDecEx(115, (0x80 >> 1), false, 3, 1);
 
 
-  Serial.println("Valve 1");
+  Serial.print("Valve 1: ");
+  Serial.println(set);
 
   if (set) {
     ON1 = true;
-      #ifdef ONECHANNEL
+    #ifdef ONECHANNEL
     ON2 = true;
     ON3 = true;
     ON4 = true;
@@ -957,6 +1005,15 @@ void relay1_onoff(boolean set)
     digitalWrite(RELAY1, LOW);
     led_tank1.off();
     Blynk.virtualWrite(V1, 0);
+    Blynk.syncVirtual(V10);
+    Blynk.syncVirtual(V20);
+    Blynk.syncVirtual(V21);
+    Blynk.syncVirtual(V22);
+    Blynk.syncVirtual(V23);
+    Blynk.syncVirtual(V24);
+    Blynk.syncVirtual(V25);
+    Blynk.syncVirtual(V26);
+    Blynk.syncVirtual(V27);
     delay(300);
   }
 
@@ -965,7 +1022,7 @@ void relay1_onoff(boolean set)
 }
 
 
-void relay2_onoff(boolean set)
+void relay2_onoff(bool set)
 {
   uint8_t data[] = { 0x78, 0x00, 0x00, 0x00 }; // t
   display.setSegments(data);
@@ -979,10 +1036,13 @@ void relay2_onoff(boolean set)
     #ifdef ONECHANNEL
     digitalWrite(RELAY1, HIGH);
     led_tank1.on();
-    Blynk.virtualWrite(V1, 1);
+    Blynk.virtualWrite(V1, 1);    
     #else
     digitalWrite(RELAY2, HIGH);
     led_tank2.on();
+    Blynk.virtualWrite(V2, 1);
+    switch2_1.relayOn();
+    switch2_2.relayOn();
     #endif
     delay(300);
   }
@@ -995,7 +1055,14 @@ void relay2_onoff(boolean set)
     #else
     digitalWrite(RELAY2, LOW);
     led_tank2.off();
+    Blynk.virtualWrite(V2, 0);
+    switch2_1.relayOff();
+    switch2_2.relayOff();
     #endif
+    Blynk.syncVirtual(V11);
+    
+    Blynk.syncVirtual(V28);
+    Blynk.syncVirtual(V29);
     delay(300);
   }
 
@@ -1003,7 +1070,7 @@ void relay2_onoff(boolean set)
 
 }
 
-void relay3_onoff(boolean set)
+void relay3_onoff(bool set)
 {
   uint8_t data[] = { 0x78, 0x00, 0x00, 0x00 }; // t
   display.setSegments(data);
@@ -1022,6 +1089,10 @@ void relay3_onoff(boolean set)
     digitalWrite(RELAY3, HIGH);
     led_tank3.on();
     Blynk.virtualWrite(V3, 1);
+    switch3_1.relayOn();
+    switch3_2.relayOn();
+    switch3_3.relayOn();
+    switch3_4.relayOn();
     #endif
     delay(300);
   }
@@ -1035,7 +1106,16 @@ void relay3_onoff(boolean set)
     digitalWrite(RELAY3, LOW);
     led_tank3.off();
     Blynk.virtualWrite(V3, 0);
+    switch3_1.relayOff();
+    switch3_2.relayOff();
+    switch3_3.relayOff();
+    switch3_4.relayOff();
     #endif
+    Blynk.syncVirtual(V12);
+    Blynk.syncVirtual(V31);
+    Blynk.syncVirtual(V32);
+    Blynk.syncVirtual(V33);
+    Blynk.syncVirtual(V34);
     delay(300);
   }
 
@@ -1043,7 +1123,7 @@ void relay3_onoff(boolean set)
 
 }
 
-void relay4_onoff(boolean set)
+void relay4_onoff(bool set)
 {
   uint8_t data[] = { 0x78, 0x00, 0x00, 0x00 }; // t
   display.setSegments(data);
@@ -1062,6 +1142,11 @@ void relay4_onoff(boolean set)
     #else
     digitalWrite(RELAY4, HIGH);
     led_tank4.on();
+    Blynk.virtualWrite(V4, 1);
+    switch4_1.relayOn();
+    switch4_2.relayOn();
+    switch4_3.relayOn();
+    switch4_4.relayOn();
     #endif
     delay(300);
   }
@@ -1074,7 +1159,17 @@ void relay4_onoff(boolean set)
     #else
     digitalWrite(RELAY4, LOW);
     led_tank4.off();
+    Blynk.virtualWrite(V4, 0);
+    switch4_1.relayOff();
+    switch4_2.relayOff();
+    switch4_3.relayOff();
+    switch4_4.relayOff();
     #endif
+    Blynk.syncVirtual(V13);
+    Blynk.syncVirtual(V41);
+    Blynk.syncVirtual(V42);
+    Blynk.syncVirtual(V43);
+    Blynk.syncVirtual(V44);
     delay(300);
   }
   // afterState1 = timer1.after(CLEANDELAY0, tank4_state2);
@@ -1091,6 +1186,19 @@ void syncSchedule()
   Blynk.syncVirtual(V11);
   Blynk.syncVirtual(V12);
   Blynk.syncVirtual(V13);
+    
+  Blynk.syncVirtual(V28);
+  Blynk.syncVirtual(V29);
+
+  Blynk.syncVirtual(V31);
+  Blynk.syncVirtual(V32);
+  Blynk.syncVirtual(V33);
+  Blynk.syncVirtual(V34);
+
+  Blynk.syncVirtual(V41);
+  Blynk.syncVirtual(V42);
+  Blynk.syncVirtual(V43);
+  Blynk.syncVirtual(V44);
 
 }
 
@@ -1106,7 +1214,7 @@ void checkValidTime()
             relay1_onoff(true);
           }
         }
-        else if (WET1 == true && ON1) {
+        else if ((WET1 == true) && ON1) {
           relay1_onoff(false);
         }
       }
@@ -1119,106 +1227,110 @@ void checkValidTime()
 
 void checkvalidtime1()
 {
-    Serial.println(String("start1: ")+bstart1+String(" stop1: ")+bstop1+String(" current1: ")+bcurrent1+String(" force1: ")+force1);
-    Serial.println(String("current: ")+currenttime+String(" start: ")+starttime1+String(" stop: ")+stoptime1);
+    // Serial.println(String("start1: ")+bstart1+String(" stop1: ")+bstop1+String(" current1: ")+bcurrent1+String(" force1: ")+force1);
+    // Serial.println(String("current: ")+currenttime+String(" start: ")+starttime1+String(" stop: ")+stoptime1);
     if (bstart1 && bstop1 && bcurrent1 && !force1) {
       if ( (currenttime >= starttime1) && (currenttime <= stoptime1) ) {
         if (WET1 == false) {
           if (!ON1) {
-            relay1_onoff(true);
+            // relay1_onoff(true);
+            _schedule1 = true;
           }
         }
-        else if (WET1 == true && ON1) {
-          relay1_onoff(false);
+        else if ((WET1 == true) && ON1) {
+          // relay1_onoff(false);
+          _schedule1 = false;
         }
       }
       else if (ON1) {
-        relay1_onoff(false);
+        // relay1_onoff(false);
+        _schedule1 = false;
       }
     }
 }
 
 void checkvalidtime2()
 {
-    Serial.println(String("start2: ")+bstart2+String(" stop2: ")+bstop2+String(" current2: ")+bcurrent2+String(" force2: ")+force2);
-    Serial.println(String("current: ")+currenttime+String(" start2: ")+starttime2+String(" stop2: ")+stoptime2);
+    // Serial.println(String("start2: ")+bstart2+String(" stop2: ")+bstop2+String(" current2: ")+bcurrent2+String(" force2: ")+force2);
+    // Serial.println(String("current: ")+currenttime+String(" start2: ")+starttime2+String(" stop2: ")+stoptime2);
     if (bstart2 && bstop2 && bcurrent2 && !force2) {
       if ( (currenttime >= starttime2) && (currenttime <= stoptime2) ) { // ยังอยู่ในเวลาที่ตั้งไว้
         if (WET2 == false) {  // ถ้าความชื้นไม่สูง
           if (!ON2) {
-            relay2_onoff(true);
-            Blynk.virtualWrite(V2, 1);
+            // relay2_onoff(true);
+            _schedule2 = true;
           }
         }
-        else if (WET2 == true && ON2) { // ความชื้นสูง และ relay เปิด ให้สั่งปิด
-          relay2_onoff(false);
-          Blynk.virtualWrite(V2, 0);
+        else if ((WET2 == true) && ON2) { // ความชื้นสูง และ relay เปิด ให้สั่งปิด 
+          // relay2_onoff(false);
+          _schedule2 = false;
         }
       }
       else if (ON2) {
-        relay2_onoff(false);
-        Blynk.virtualWrite(V2, 0);
+        // relay2_onoff(false);
+        _schedule2 = false;        
       }
     }
 }
 
 void checkvalidtime3()
 {
-    Serial.println(String("start3: ")+bstart3+String(" stop3: ")+bstop3+String(" current3: ")+bcurrent3+String(" force3: ")+force3);
-    Serial.println(String("current: ")+currenttime+String(" start3: ")+starttime3+String(" stop3: ")+stoptime3);
+    // Serial.println(String("start3: ")+bstart3+String(" stop3: ")+bstop3+String(" current3: ")+bcurrent3+String(" force3: ")+force3);
+    // Serial.println(String("current: ")+currenttime+String(" start3: ")+starttime3+String(" stop3: ")+stoptime3);
     if (bstart3 && bstop3 && bcurrent3 && !force3) {
       if ( (currenttime >= starttime3) && (currenttime <= stoptime3) ) {
         if (WET3 == false) {
           if (!ON3) {
-            relay3_onoff(true);
-
+            // relay3_onoff(true);
+            _schedule3 = true;
           }
         }
-        else if (WET3 == true && ON3) {
-          relay3_onoff(false);
-
+        else if ((WET3 == true) && ON3) {
+          // relay3_onoff(false);
+          _schedule3 = false;
         }
       }
       else if (overlap) {
         if ((currenttime >= starttime3) || (currenttime < stoptime3) ) {
           if (!ON3) {
-            relay3_onoff(true);
-
+            // relay3_onoff(true);
+            _schedule3 = true;
           }
         }
         else if (currenttime >= stoptime3) {
           if (ON3) {
-            relay3_onoff(false);
+            // relay3_onoff(false);
+            _schedule3 = false;
           }
         }
       }
       else if (ON3) {
-        relay3_onoff(false);
-
+        // relay3_onoff(false);
+        _schedule3 = false;
       }
     }
 }
 
 void checkvalidtime4()
 {
-    Serial.println(String("start4: ")+bstart4+String(" stop4: ")+bstop4+String(" current4: ")+bcurrent4+String(" force4: ")+force4);
-    Serial.println(String("current: ")+currenttime+String(" start4: ")+starttime4+String(" stop4: ")+stoptime4);
+    // Serial.println(String("start4: ")+bstart4+String(" stop4: ")+bstop4+String(" current4: ")+bcurrent4+String(" force4: ")+force4);
+    // Serial.println(String("current: ")+currenttime+String(" start4: ")+starttime4+String(" stop4: ")+stoptime4);
     if (bstart4 && bstop4 && bcurrent4 && !force4) {
       if ( (currenttime >= starttime4) && (currenttime <= stoptime4) ) {
         if (WET4 == false) {
           if (!ON4) {
-            relay4_onoff(true);
-            Blynk.virtualWrite(V4, 1);
+            // relay4_onoff(true);
+            _schedule4 = true;
           }
         }
-        else if (WET4 == true && ON4) {
-          relay4_onoff(false);
-          Blynk.virtualWrite(V4, 0);
+        else if ((WET4 == true) && ON4) {
+          // relay4_onoff(false);
+          _schedule4 = false;
         }
       }
       else if (ON4) {
-        relay4_onoff(false);
-        Blynk.virtualWrite(V4, 0);
+        // relay4_onoff(false);
+        _schedule4 = false;
       }
     }
 }
@@ -1233,6 +1345,7 @@ void zone1Off()
 {
   relay1_onoff(false);
   Blynk.virtualWrite(V1, 0);
+  Serial.println("Relay 1 OFF. zone1Off()");
 }
 
 void zone2start()
@@ -1284,19 +1397,17 @@ BLYNK_WRITE(V1)
   Serial.println(pinValue);
   if (pinValue == 1) {
     Serial.println("switch 1 just pressed");
-
     relay1_onoff(true);
-    force1 = true;
-    bstart1 = false;
-    bstop1 = false;
+    _schedule1 = true;
   }
   else {
     relay1_onoff(false);
-    force1 = true;
-    bstart1 = false;
-    bstop1 = false;
+    Serial.println("Relay 1 OFF. BLYNK_WRITE(V1)");
+    _schedule1 = false;
   }
-
+  force1 = true;
+  bstart1 = false;
+  bstop1 = false;
 }
 
 BLYNK_WRITE(V2)
@@ -1992,6 +2103,7 @@ void syncZone()
   Blynk.syncVirtual(V25);
   Blynk.syncVirtual(V26);
   Blynk.syncVirtual(V27);
+  /*
   Blynk.syncVirtual(V28);
   Blynk.syncVirtual(V29);
 
@@ -2004,6 +2116,7 @@ void syncZone()
   Blynk.syncVirtual(V42);
   Blynk.syncVirtual(V43);
   Blynk.syncVirtual(V44);
+  */
 
   // assigned zone 2 repeats time
   Blynk.syncVirtual(V15);
@@ -2326,16 +2439,32 @@ BLYNK_WRITE(V40)
     Serial.print(t.getStartHour());
     Serial.print(" Min: ");
     Serial.println(t.getStartMinute());
-  }
 
-  if (timerID == dtINVALID_ALARM_ID) {
-    timerID = Alarm.alarmOnce(t.getStartHour(), t.getStartMinute(), 0, zone2start);
+    if (timerID == dtINVALID_ALARM_ID) {
+      timerID = Alarm.alarmOnce(t.getStartHour(), t.getStartMinute(), 0, zone2start);
+    }
+    else {
+      Alarm.free(timerID);
+      timerID = Alarm.alarmOnce(t.getStartHour(), t.getStartMinute(), 0, zone2start);
+    }
+    switch2_1.setState(true, true, true, true);
+    switch2_2.setState(true, true, true, true);
+    switch2_1.relayOff();
+    switch2_2.relayOff();
+    zone2Pattern = true;
   }
   else {
-    Alarm.free(timerID);
-    timerID = Alarm.alarmOnce(t.getStartHour(), t.getStartMinute(), 0, zone2start);
+    Serial.println("No Start time");
+    Serial.print("Hour: ");
+    Serial.print(t.getStartHour());
+    Serial.print(" Min: ");
+    Serial.println(t.getStartMinute());
+    switch2_1.setState(true, true, true, false);
+    switch2_2.setState(true, true, true, false);
+    zone2Pattern = false;
+    Serial.print("Pattern: ");
+    Serial.println(zone2Pattern);
   }
-
 }
 
 BLYNK_READ(V60)
@@ -2362,13 +2491,18 @@ BLYNK_WRITE(V28)
   bool b_start, b_stop, b_current, b_force;
 
   long startTimeInSecs = param[0].asLong();
-  Serial.print("V2: Start time in secs: ");
+  Serial.print("V2_1: Start time in secs: ");
   Serial.println(startTimeInSecs);
   Serial.println();
 
   TimeInputParam t(param);
   struct tm c_time;
   time_t t_of_day;
+
+  if (zone2Pattern == true) {
+    Serial.println("Zone 2 pattern 1 enabled");
+    return;
+  }
 
   // Process start time
 
@@ -2491,7 +2625,7 @@ BLYNK_WRITE(V28)
   Serial.print("Current time: ");
   Serial.println(currentTime);
   Serial.println();
-  Serial.println(String("start2: ")+b_start+String(" stop2: ")+b_stop+String(" current2: ")+b_current+String(" force2: ")+b_force);
+  Serial.println(String("start2_1: ")+b_start+String(" stop2_1: ")+b_stop+String(" current2_1: ")+b_current+String(" force2_1: ")+b_force);
   Serial.println();
 
   if (b_current == false) {
@@ -2507,7 +2641,7 @@ BLYNK_WRITE(V29)
   bool b_start, b_stop, b_current, b_force;
 
   long startTimeInSecs = param[0].asLong();
-  Serial.print("V2: Start time in secs: ");
+  Serial.print("V2_2: Start time in secs: ");
   Serial.println(startTimeInSecs);
   Serial.println();
 
@@ -2515,6 +2649,10 @@ BLYNK_WRITE(V29)
   struct tm c_time;
   time_t t_of_day;
 
+  if (zone2Pattern == true) {
+    Serial.println("Zone 2 pattern 1 enabled");
+    return;
+  }
   // Process start time
 
   if (t.hasStartTime())
@@ -2636,7 +2774,7 @@ BLYNK_WRITE(V29)
   Serial.print("Current time: ");
   Serial.println(currentTime);
   Serial.println();
-  Serial.println(String("start2: ")+b_start+String(" stop2: ")+b_stop+String(" current2: ")+b_current+String(" force2: ")+b_force);
+  Serial.println(String("start2_2: ")+b_start+String(" stop2_2: ")+b_stop+String(" current2_2: ")+b_current+String(" force2_2: ")+b_force);
   Serial.println();
 
   if (b_current == false) {
@@ -2652,7 +2790,7 @@ BLYNK_WRITE(V31)
   bool b_start, b_stop, b_current, b_force;
 
   long startTimeInSecs = param[0].asLong();
-  Serial.print("V3: Start time in secs: ");
+  Serial.print("V3_1: Start time in secs: ");
   Serial.println(startTimeInSecs);
   Serial.println();
 
@@ -2781,7 +2919,7 @@ BLYNK_WRITE(V31)
   Serial.print("Current time: ");
   Serial.println(currentTime);
   Serial.println();
-  Serial.println(String("start2: ")+b_start+String(" stop2: ")+b_stop+String(" current2: ")+b_current+String(" force2: ")+b_force);
+  Serial.println(String("start3_1: ")+b_start+String(" stop3_1: ")+b_stop+String(" current3_1: ")+b_current+String(" force3_1: ")+b_force);
   Serial.println();
 
   if (b_current == false) {
@@ -2797,7 +2935,7 @@ BLYNK_WRITE(V32)
   bool b_start, b_stop, b_current, b_force;
 
   long startTimeInSecs = param[0].asLong();
-  Serial.print("V3: Start time in secs: ");
+  Serial.print("V3_2: Start time in secs: ");
   Serial.println(startTimeInSecs);
   Serial.println();
 
@@ -2926,7 +3064,7 @@ BLYNK_WRITE(V32)
   Serial.print("Current time: ");
   Serial.println(currentTime);
   Serial.println();
-  Serial.println(String("start2: ")+b_start+String(" stop2: ")+b_stop+String(" current2: ")+b_current+String(" force2: ")+b_force);
+  Serial.println(String("start3_2: ")+b_start+String(" stop3_2: ")+b_stop+String(" current3_2: ")+b_current+String(" force3_2: ")+b_force);
   Serial.println();
 
   if (b_current == false) {
@@ -2942,7 +3080,7 @@ BLYNK_WRITE(V33)
   bool b_start, b_stop, b_current, b_force;
 
   long startTimeInSecs = param[0].asLong();
-  Serial.print("V3: Start time in secs: ");
+  Serial.print("V3_3: Start time in secs: ");
   Serial.println(startTimeInSecs);
   Serial.println();
 
@@ -3071,7 +3209,7 @@ BLYNK_WRITE(V33)
   Serial.print("Current time: ");
   Serial.println(currentTime);
   Serial.println();
-  Serial.println(String("start2: ")+b_start+String(" stop2: ")+b_stop+String(" current2: ")+b_current+String(" force2: ")+b_force);
+  Serial.println(String("start3_3: ")+b_start+String(" stop3_3: ")+b_stop+String(" current3_3: ")+b_current+String(" force3_3: ")+b_force);
   Serial.println();
 
   if (b_current == false) {
@@ -3087,7 +3225,7 @@ BLYNK_WRITE(V34)
   bool b_start, b_stop, b_current, b_force;
 
   long startTimeInSecs = param[0].asLong();
-  Serial.print("V3: Start time in secs: ");
+  Serial.print("V3_4: Start time in secs: ");
   Serial.println(startTimeInSecs);
   Serial.println();
 
@@ -3216,7 +3354,7 @@ BLYNK_WRITE(V34)
   Serial.print("Current time: ");
   Serial.println(currentTime);
   Serial.println();
-  Serial.println(String("start2: ")+b_start+String(" stop2: ")+b_stop+String(" current2: ")+b_current+String(" force2: ")+b_force);
+  Serial.println(String("start3_4: ")+b_start+String(" stop3_4: ")+b_stop+String(" current3_4: ")+b_current+String(" force3_4: ")+b_force);
   Serial.println();
 
   if (b_current == false) {
@@ -3232,7 +3370,7 @@ BLYNK_WRITE(V41)
   bool b_start, b_stop, b_current, b_force;
 
   long startTimeInSecs = param[0].asLong();
-  Serial.print("V4: Start time in secs: ");
+  Serial.print("V4_1: Start time in secs: ");
   Serial.println(startTimeInSecs);
   Serial.println();
 
@@ -3360,7 +3498,7 @@ BLYNK_WRITE(V41)
   Serial.print("Current time: ");
   Serial.println(currentTime);
   Serial.println();
-  Serial.println(String("start2: ")+b_start+String(" stop2: ")+b_stop+String(" current2: ")+b_current+String(" force2: ")+b_force);
+  Serial.println(String("start4_1: ")+b_start+String(" stop4_1: ")+b_stop+String(" current4_1: ")+b_current+String(" force4_1: ")+b_force);
   Serial.println();
 
   if (b_current == false) {
@@ -3377,7 +3515,7 @@ BLYNK_WRITE(V42)
   bool b_start, b_stop, b_current, b_force;
 
   long startTimeInSecs = param[0].asLong();
-  Serial.print("V4: Start time in secs: ");
+  Serial.print("V4_2: Start time in secs: ");
   Serial.println(startTimeInSecs);
   Serial.println();
 
@@ -3505,7 +3643,7 @@ BLYNK_WRITE(V42)
   Serial.print("Current time: ");
   Serial.println(currentTime);
   Serial.println();
-  Serial.println(String("start2: ")+b_start+String(" stop2: ")+b_stop+String(" current2: ")+b_current+String(" force2: ")+b_force);
+  Serial.println(String("start4_2: ")+b_start+String(" stop4_2: ")+b_stop+String(" current4_2: ")+b_current+String(" force4_2: ")+b_force);
   Serial.println();
 
   if (b_current == false) {
@@ -3522,7 +3660,7 @@ BLYNK_WRITE(V43)
   bool b_start, b_stop, b_current, b_force;
 
   long startTimeInSecs = param[0].asLong();
-  Serial.print("V4: Start time in secs: ");
+  Serial.print("V4_3: Start time in secs: ");
   Serial.println(startTimeInSecs);
   Serial.println();
 
@@ -3650,7 +3788,7 @@ BLYNK_WRITE(V43)
   Serial.print("Current time: ");
   Serial.println(currentTime);
   Serial.println();
-  Serial.println(String("start2: ")+b_start+String(" stop2: ")+b_stop+String(" current2: ")+b_current+String(" force2: ")+b_force);
+  Serial.println(String("start4_3: ")+b_start+String(" stop4_3: ")+b_stop+String(" current4_3: ")+b_current+String(" force4_3: ")+b_force);
   Serial.println();
 
   if (b_current == false) {
@@ -3668,7 +3806,7 @@ BLYNK_WRITE(V44)
   bool b_start, b_stop, b_current, b_force;
 
   long startTimeInSecs = param[0].asLong();
-  Serial.print("V4: Start time in secs: ");
+  Serial.print("V4_4: Start time in secs: ");
   Serial.println(startTimeInSecs);
   Serial.println();
 
@@ -3796,7 +3934,7 @@ BLYNK_WRITE(V44)
   Serial.print("Current time: ");
   Serial.println(currentTime);
   Serial.println();
-  Serial.println(String("start2: ")+b_start+String(" stop2: ")+b_stop+String(" current2: ")+b_current+String(" force2: ")+b_force);
+  Serial.println(String("start4_4: ")+b_start+String(" stop4_4: ")+b_stop+String(" current4_4: ")+b_current+String(" force4_4: ")+b_force);
   Serial.println();
 
   if (b_current == false) {
@@ -3845,12 +3983,26 @@ BLYNK_CONNECTED()
   Blynk.syncVirtual(V25);
   Blynk.syncVirtual(V26);
   Blynk.syncVirtual(V27);
+  
+
+  Blynk.syncVirtual(V31);
+  Blynk.syncVirtual(V32);
+  Blynk.syncVirtual(V33);
+  Blynk.syncVirtual(V34);
+
+  Blynk.syncVirtual(V41);
+  Blynk.syncVirtual(V42);
+  Blynk.syncVirtual(V43);
+  Blynk.syncVirtual(V44);
 
   // Synchonize timer zone 2
   Blynk.syncVirtual(V15);
   Blynk.syncVirtual(V16);
   Blynk.syncVirtual(V17);
   Blynk.syncVirtual(V40);
+
+  Blynk.syncVirtual(V28);
+  Blynk.syncVirtual(V29);
 
   // add schedule check at midnight
   if(!schedule) {
@@ -3881,15 +4033,36 @@ void soilMoistureSensor()
   if (mappedValue > soilMoistureSetPoint) {
     Serial.println("High Moisture");
     Serial.println("Soil Moisture: Turn Relay Off");
+    WET4 = true;
     WET3 = true;
-    WET1 = true;
+    WET2 = true;
+    WET1 = true;    
   }
   else {
     Serial.println("Low Moisture");
     Serial.println("Soil Moisture: Turn Relay On");
+    WET4 = false;
     WET3 = false;
+    WET2 = false;
     WET1 = false;
   }
+  
+  switch2_1.setWet(WET2);
+  switch2_2.setWet(WET2);
+  switch3_1.setWet(WET3);
+  switch3_2.setWet(WET3);
+  switch3_3.setWet(WET3);
+  switch3_4.setWet(WET3);
+  switch4_1.setWet(WET4);
+  switch4_2.setWet(WET4);
+  switch4_3.setWet(WET4);
+  switch4_4.setWet(WET4);
+  Serial.print("WET1 WET2 WET3 WET4 : ");
+  Serial.print(WET1); Serial.print(" ");
+  Serial.print(WET2); Serial.print(" ");
+  Serial.print(WET3); Serial.print(" ");
+  Serial.print(WET4); Serial.print(" ");
+  Serial.println();
 }
 
 

@@ -46,25 +46,41 @@ void CheckValidTime::setTimerMode(bool TIMER)
   _TIMER = TIMER;
 }
 
+void CheckValidTime::setWet(bool WET)
+{
+  _WET = WET;
+}
+
 int CheckValidTime::getRelayState()
 {
   return _turnon;
 }
 
+
 void CheckValidTime::check()
 {
   if (_bstart && _bstop && _bcurrent && !_force) {
     if ( (_currenttime >= _starttime) && (_currenttime <= _stoptime) ) {
-      if (!_ON) {
-        relayOn();
+      if (_WET == false) {
+        if (!_ON) {
+          relayOn();
+        }
+      }
+      else if ((_WET == true) && _ON) {
+        relayOff();
       }
     }
     else if (_overlap && _TIMER != 1) {
       // day 0 when currenttime >= starttime or currenttime < stoptime turn relay on
         // ON
       if ((_currenttime >= _starttime) || (_currenttime < _stoptime) ) {
-        if (!_ON) {
-          relayOn();
+        if (_WET == false) {
+          if (!_ON) {
+            relayOn();
+          }
+        }
+        else if ((_WET == true) && _ON) {
+          relayOff();
         }
       }
       // day 0+1 at midnight currenttime <= starttime

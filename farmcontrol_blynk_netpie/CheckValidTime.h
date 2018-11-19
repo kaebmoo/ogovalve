@@ -10,6 +10,7 @@ class CheckValidTime
     void setState(bool bstart, bool bstop, bool bcurrent, bool force);
     void setOverlap(int overlap);
     void setTimerMode(bool TIMER);
+    void setWet(bool WET);
     int getRelayState();
     void relayOn();
     void relayOff();
@@ -28,6 +29,7 @@ class CheckValidTime
     bool _TIMER = false; // timer mode
     int _overlap = 0;
     int _turnon = 0;  // turn relay on or off
+    bool _WET = false;
 };
 
 
