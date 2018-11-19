@@ -66,6 +66,8 @@ SOFTWARE.
 #include <ArduinoJson.h>
 #include <TimeLord.h>
 
+#include "CheckValidTime.h"
+
 // NAN, THAILAND
 float const LATITUDE = 18.786741;
 float const LONGITUDE = 100.782217;
@@ -171,6 +173,9 @@ unsigned long timezoneOffset;
 time_t sunriseTime, sunsetTime;
 AlarmId alarmIdTime[16] = {dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID, \
                           dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID,dtINVALID_ALARM_ID};
+
+
+CheckValidTime switch2_1, switch2_2, switch3_1, switch3_2, switch3_3, switch3_4, switch4_1, switch4_2, switch4_3, switch4_4;
 
 // #define UNO
 
@@ -406,6 +411,17 @@ void loop()
     Blynk.run();
   }
 
+  switch2_1.run();
+  switch2_2.run();
+  switch3_1.run();
+  switch3_2.run();
+  switch3_3.run();
+  switch3_4.run();
+  switch4_1.run();
+  switch4_2.run();
+  switch4_3.run();
+  switch4_4.run();
+
   timer1.update();
   timer2.update();
   timer3.update();
@@ -416,7 +432,7 @@ void loop()
 
   Alarm.delay(0);
   currenttime = (unsigned long) now();
-
+  relayStatus();
 
   unsigned long currentMillis = millis();
   if (currentMillis - previousMillis >= interval) {
@@ -470,6 +486,60 @@ void loop()
     microgear.loop();
   }
   #endif
+}
+
+void relayStatus()
+{
+  int schedule0, schedule1, schedule2, schedule3;
+
+  schedule0 = switch2_1.getRelayState();
+  schedule1 = switch2_2.getRelayState();
+  if (schedule0 || schedule1) {
+    if (!ON2) {
+      // relayOn();
+      relay2_onoff(true);
+    }
+  }
+  else {
+    if (ON2) {
+      // relayOff();
+      relay2_onoff(false);
+    }
+  }
+
+  schedule0 = switch3_1.getRelayState();
+  schedule1 = switch3_2.getRelayState();
+  schedule2 = switch3_3.getRelayState();
+  schedule3 = switch3_4.getRelayState();
+  if (schedule0 || schedule1 || schedule2 || schedule3) {
+    if (!ON3) {
+      // relayOn();
+      relay3_onoff(true);
+    }
+  }
+  else {
+    if (ON3) {
+      // relayOff();
+      relay3_onoff(false);
+    }
+  }
+
+  schedule0 = switch4_1.getRelayState();
+  schedule1 = switch4_2.getRelayState();
+  schedule2 = switch4_3.getRelayState();
+  schedule3 = switch4_4.getRelayState();
+  if (schedule0 || schedule1 || schedule2 || schedule3) {
+    if (!ON4) {
+      // relayOn();
+      relay4_onoff(true);
+    }
+  }
+  else {
+    if (ON4) {
+      // relayOff();
+      relay4_onoff(false);
+    }
+  }
 }
 
 
@@ -1239,16 +1309,22 @@ BLYNK_WRITE(V2)
     Serial.println("switch 2 just pressed");
 
     relay2_onoff(true);
+    switch2_1.relayOn();
+    switch2_2.relayOn();
     force2 = true;
     bstart2 = false;
     bstop2 = false;
   }
   else {
     relay2_onoff(false);
+    switch2_1.relayOff();
+    switch2_2.relayOff();
     force2 = true;
     bstart2 = false;
     bstop2 = false;
   }
+  switch2_1.setState(bstart2, bstop2, bcurrent2, force2);
+  switch2_2.setState(bstart2, bstop2, bcurrent2, force2);
 }
 
 BLYNK_WRITE(V3)
@@ -1261,17 +1337,28 @@ BLYNK_WRITE(V3)
     Serial.println("switch 3 just pressed");
 
     relay3_onoff(true);
+    switch3_1.relayOn();
+    switch3_2.relayOn();
+    switch3_3.relayOn();
+    switch3_4.relayOn();
     force3 = true;
     bstart3 = false;
     bstop3 = false;
   }
   else {
     relay3_onoff(false);
+    switch3_1.relayOff();
+    switch3_2.relayOff();
+    switch3_3.relayOff();
+    switch3_4.relayOff();
     force3 = true;
     bstart3 = false;
     bstop3 = false;
   }
-
+  switch3_1.setState(bstart3, bstop3, bcurrent3, force3);
+  switch3_2.setState(bstart3, bstop3, bcurrent3, force3);
+  switch3_3.setState(bstart3, bstop3, bcurrent3, force3);
+  switch3_4.setState(bstart3, bstop3, bcurrent3, force3);
 }
 
 BLYNK_WRITE(V4)
@@ -1284,16 +1371,28 @@ BLYNK_WRITE(V4)
     Serial.println("switch 4 just pressed");
 
     relay4_onoff(true);
+    switch4_1.relayOn();
+    switch4_2.relayOn();
+    switch4_3.relayOn();
+    switch4_4.relayOn();
     force4 = true;
     bstart4 = false;
     bstop4 = false;
   }
   else {
     relay4_onoff(false);
+    switch4_1.relayOff();
+    switch4_2.relayOff();
+    switch4_3.relayOff();
+    switch4_4.relayOff();
     force4 = true;
     bstart4 = false;
     bstop4 = false;
   }
+  switch4_1.setState(bstart4, bstop4, bcurrent4, force4);
+  switch4_2.setState(bstart4, bstop4, bcurrent4, force4);
+  switch4_3.setState(bstart4, bstop4, bcurrent4, force4);
+  switch4_4.setState(bstart4, bstop4, bcurrent4, force4);
 }
 
 
@@ -1893,6 +1992,18 @@ void syncZone()
   Blynk.syncVirtual(V25);
   Blynk.syncVirtual(V26);
   Blynk.syncVirtual(V27);
+  Blynk.syncVirtual(V28);
+  Blynk.syncVirtual(V29);
+
+  Blynk.syncVirtual(V31);
+  Blynk.syncVirtual(V32);
+  Blynk.syncVirtual(V33);
+  Blynk.syncVirtual(V34);
+
+  Blynk.syncVirtual(V41);
+  Blynk.syncVirtual(V42);
+  Blynk.syncVirtual(V43);
+  Blynk.syncVirtual(V44);
 
   // assigned zone 2 repeats time
   Blynk.syncVirtual(V15);
@@ -2227,17 +2338,17 @@ BLYNK_WRITE(V40)
 
 }
 
-BLYNK_READ(V30)
+BLYNK_READ(V60)
 {
-  Blynk.virtualWrite(V30, soilMoisture);
+  Blynk.virtualWrite(V60, soilMoisture);
 }
 
-BLYNK_READ(V31)
+BLYNK_READ(V61)
 {
-  Blynk.virtualWrite(V31, mappedValue);
+  Blynk.virtualWrite(V61, mappedValue);
 }
 
-BLYNK_WRITE(V32)
+BLYNK_WRITE(V62)
 {
   soilMoistureSetPoint = param.asInt();
 
@@ -2245,6 +2356,1456 @@ BLYNK_WRITE(V32)
   Serial.println(soilMoistureSetPoint);
 }
 
+BLYNK_WRITE(V28)
+{
+  unsigned long startTime, stopTime;
+  bool b_start, b_stop, b_current, b_force;
+
+  long startTimeInSecs = param[0].asLong();
+  Serial.print("V2: Start time in secs: ");
+  Serial.println(startTimeInSecs);
+  Serial.println();
+
+  TimeInputParam t(param);
+  struct tm c_time;
+  time_t t_of_day;
+
+  // Process start time
+
+  if (t.hasStartTime())
+  {
+    Serial.println(String("Start: ") +
+                   t.getStartHour() + ":" +
+                   t.getStartMinute() + ":" +
+                   t.getStartSecond());
+
+
+
+     Serial.println(String("Year: ") + year() + String(" Month: ") + month() + String(" Day: ") + day());
+     c_time.tm_year = year()-1900;
+     c_time.tm_mon= month()-1;
+     c_time.tm_mday = day();
+     c_time.tm_hour = t.getStartHour();
+     c_time.tm_min = t.getStartMinute();
+     c_time.tm_sec = 0;
+     c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+     t_of_day = mktime(&c_time);
+     // printf("seconds since the Epoch: %ld\n", (long) t_of_day)
+     Serial.println(String("Start seconds since the Epoch: ") + t_of_day);
+     startTime = t_of_day;
+     b_start = true;
+  }
+  else if (t.isStartSunrise())
+  {
+    Serial.println("Start at sunrise");
+  }
+  else if (t.isStartSunset())
+  {
+    Serial.println("Start at sunset");
+  }
+  else
+  {
+    // Do nothing
+    b_start = false;
+  }
+
+  // Process stop time
+
+  if (t.hasStopTime())
+  {
+    Serial.println(String("Stop: ") +
+                   t.getStopHour() + ":" +
+                   t.getStopMinute() + ":" +
+                   t.getStopSecond());
+    Serial.println(String("Year: ") + year() + String(" Month: ") + month() + String(" Day: ") + day());
+     c_time.tm_year = year()-1900;
+     c_time.tm_mon= month()-1;
+     c_time.tm_mday = day();
+     c_time.tm_hour = t.getStopHour();
+     c_time.tm_min = t.getStopMinute();
+     c_time.tm_sec = 0;
+     c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+     t_of_day = mktime(&c_time);
+     // printf("seconds since the Epoch: %ld\n", (long) t_of_day)
+     Serial.println(String("Stop seconds since the Epoch: ") + t_of_day);
+     stopTime = t_of_day;
+     b_stop = true;
+  }
+  else if (t.isStopSunrise())
+  {
+    Serial.println("Stop at sunrise");
+  }
+  else if (t.isStopSunset())
+  {
+    Serial.println("Stop at sunset");
+  }
+  else
+  {
+    // Do nothing: no stop time was set
+    b_stop = false;
+  }
+
+  // Process timezone
+  // Timezone is already added to start/stop time
+
+  Serial.println(String("Time zone: ") + t.getTZ());
+
+  // Get timezone offset (in seconds)
+  Serial.println(String("Time zone offset: ") + t.getTZ_Offset());
+  timezoneOffset = t.getTZ_Offset();
+
+  if (b_start && b_stop) {
+    b_force = false;
+  }
+
+
+  // weekday();         // day of the week (1-7), Sunday is day 1
+  // 1. Sunday, 2. Mon, 3. Tue, ...
+  Serial.println(String("Weekday ") + weekday());
+  int iWeekday;
+  iWeekday = weekday() - 1;
+  if (iWeekday == 0) {
+    iWeekday = 7;
+  }
+
+  int WorkingDay[7] = {0,0,0,0,0,0,0};
+
+  // Process weekdays (1. Mon, 2. Tue, 3. Wed, ...)
+  for (int i = 1; i <= 7; i++) {
+    if (t.isWeekdaySelected(i)) {
+      Serial.println(String("Day ") + i + " is selected");
+      WorkingDay[i-1] = 1;
+    }
+  }
+
+  if (WorkingDay[iWeekday-1] == 1) {
+    Serial.println("Working day");
+    b_current = true;
+  }
+  else {
+    b_current = false;
+  }
+
+  // setTime((time_t) now());
+  String currentTime = String(hour()) + ":" + minute() + ":" + second();
+  Serial.print("Current time: ");
+  Serial.println(currentTime);
+  Serial.println();
+  Serial.println(String("start2: ")+b_start+String(" stop2: ")+b_stop+String(" current2: ")+b_current+String(" force2: ")+b_force);
+  Serial.println();
+
+  if (b_current == false) {
+    switch2_1.relayOff();
+  }
+  switch2_1.begin(startTime, stopTime);
+  switch2_1.setState(true, true, b_current, false);
+}
+
+BLYNK_WRITE(V29)
+{
+  unsigned long startTime, stopTime;
+  bool b_start, b_stop, b_current, b_force;
+
+  long startTimeInSecs = param[0].asLong();
+  Serial.print("V2: Start time in secs: ");
+  Serial.println(startTimeInSecs);
+  Serial.println();
+
+  TimeInputParam t(param);
+  struct tm c_time;
+  time_t t_of_day;
+
+  // Process start time
+
+  if (t.hasStartTime())
+  {
+    Serial.println(String("Start: ") +
+                   t.getStartHour() + ":" +
+                   t.getStartMinute() + ":" +
+                   t.getStartSecond());
+
+
+
+     Serial.println(String("Year: ") + year() + String(" Month: ") + month() + String(" Day: ") + day());
+     c_time.tm_year = year()-1900;
+     c_time.tm_mon= month()-1;
+     c_time.tm_mday = day();
+     c_time.tm_hour = t.getStartHour();
+     c_time.tm_min = t.getStartMinute();
+     c_time.tm_sec = 0;
+     c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+     t_of_day = mktime(&c_time);
+     // printf("seconds since the Epoch: %ld\n", (long) t_of_day)
+     Serial.println(String("Start seconds since the Epoch: ") + t_of_day);
+     startTime = t_of_day;
+     b_start = true;
+  }
+  else if (t.isStartSunrise())
+  {
+    Serial.println("Start at sunrise");
+  }
+  else if (t.isStartSunset())
+  {
+    Serial.println("Start at sunset");
+  }
+  else
+  {
+    // Do nothing
+    b_start = false;
+  }
+
+  // Process stop time
+
+  if (t.hasStopTime())
+  {
+    Serial.println(String("Stop: ") +
+                   t.getStopHour() + ":" +
+                   t.getStopMinute() + ":" +
+                   t.getStopSecond());
+    Serial.println(String("Year: ") + year() + String(" Month: ") + month() + String(" Day: ") + day());
+     c_time.tm_year = year()-1900;
+     c_time.tm_mon= month()-1;
+     c_time.tm_mday = day();
+     c_time.tm_hour = t.getStopHour();
+     c_time.tm_min = t.getStopMinute();
+     c_time.tm_sec = 0;
+     c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+     t_of_day = mktime(&c_time);
+     // printf("seconds since the Epoch: %ld\n", (long) t_of_day)
+     Serial.println(String("Stop seconds since the Epoch: ") + t_of_day);
+     stopTime = t_of_day;
+     b_stop = true;
+  }
+  else if (t.isStopSunrise())
+  {
+    Serial.println("Stop at sunrise");
+  }
+  else if (t.isStopSunset())
+  {
+    Serial.println("Stop at sunset");
+  }
+  else
+  {
+    // Do nothing: no stop time was set
+    b_stop = false;
+  }
+
+  // Process timezone
+  // Timezone is already added to start/stop time
+
+  Serial.println(String("Time zone: ") + t.getTZ());
+
+  // Get timezone offset (in seconds)
+  Serial.println(String("Time zone offset: ") + t.getTZ_Offset());
+  timezoneOffset = t.getTZ_Offset();
+
+  if (b_start && b_stop) {
+    b_force = false;
+  }
+
+
+  // weekday();         // day of the week (1-7), Sunday is day 1
+  // 1. Sunday, 2. Mon, 3. Tue, ...
+  Serial.println(String("Weekday ") + weekday());
+  int iWeekday;
+  iWeekday = weekday() - 1;
+  if (iWeekday == 0) {
+    iWeekday = 7;
+  }
+
+  int WorkingDay[7] = {0,0,0,0,0,0,0};
+
+  // Process weekdays (1. Mon, 2. Tue, 3. Wed, ...)
+  for (int i = 1; i <= 7; i++) {
+    if (t.isWeekdaySelected(i)) {
+      Serial.println(String("Day ") + i + " is selected");
+      WorkingDay[i-1] = 1;
+    }
+  }
+
+  if (WorkingDay[iWeekday-1] == 1) {
+    Serial.println("Working day");
+    b_current = true;
+  }
+  else {
+    b_current = false;
+  }
+
+  // setTime((time_t) now());
+  String currentTime = String(hour()) + ":" + minute() + ":" + second();
+  Serial.print("Current time: ");
+  Serial.println(currentTime);
+  Serial.println();
+  Serial.println(String("start2: ")+b_start+String(" stop2: ")+b_stop+String(" current2: ")+b_current+String(" force2: ")+b_force);
+  Serial.println();
+
+  if (b_current == false) {
+    switch2_2.relayOff();
+  }
+  switch2_2.begin(startTime, stopTime);
+  switch2_2.setState(true, true, b_current, false);
+}
+
+BLYNK_WRITE(V31)
+{
+  unsigned long startTime, stopTime;
+  bool b_start, b_stop, b_current, b_force;
+
+  long startTimeInSecs = param[0].asLong();
+  Serial.print("V3: Start time in secs: ");
+  Serial.println(startTimeInSecs);
+  Serial.println();
+
+  TimeInputParam t(param);
+  struct tm c_time;
+  time_t t_of_day;
+
+  // Process start time
+
+  if (t.hasStartTime())
+  {
+    Serial.println(String("Start: ") +
+                   t.getStartHour() + ":" +
+                   t.getStartMinute() + ":" +
+                   t.getStartSecond());
+
+
+
+     Serial.println(String("Year: ") + year() + String(" Month: ") + month() + String(" Day: ") + day());
+     c_time.tm_year = year()-1900;
+     c_time.tm_mon= month()-1;
+     c_time.tm_mday = day();
+     c_time.tm_hour = t.getStartHour();
+     c_time.tm_min = t.getStartMinute();
+     c_time.tm_sec = 0;
+     c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+     t_of_day = mktime(&c_time);
+     // printf("seconds since the Epoch: %ld\n", (long) t_of_day)
+     Serial.println(String("Start seconds since the Epoch: ") + t_of_day);
+     startTime = t_of_day;
+     b_start = true;
+  }
+  else if (t.isStartSunrise())
+  {
+    Serial.println("Start at sunrise");
+  }
+  else if (t.isStartSunset())
+  {
+    Serial.println("Start at sunset");
+  }
+  else
+  {
+    // Do nothing
+    b_start = false;
+  }
+
+  // Process stop time
+
+  if (t.hasStopTime())
+  {
+    Serial.println(String("Stop: ") +
+                   t.getStopHour() + ":" +
+                   t.getStopMinute() + ":" +
+                   t.getStopSecond());
+    Serial.println(String("Year: ") + year() + String(" Month: ") + month() + String(" Day: ") + day());
+     c_time.tm_year = year()-1900;
+     c_time.tm_mon= month()-1;
+     c_time.tm_mday = day();
+     c_time.tm_hour = t.getStopHour();
+     c_time.tm_min = t.getStopMinute();
+     c_time.tm_sec = 0;
+     c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+     t_of_day = mktime(&c_time);
+     // printf("seconds since the Epoch: %ld\n", (long) t_of_day)
+     Serial.println(String("Stop seconds since the Epoch: ") + t_of_day);
+     stopTime = t_of_day;
+     b_stop = true;
+  }
+  else if (t.isStopSunrise())
+  {
+    Serial.println("Stop at sunrise");
+  }
+  else if (t.isStopSunset())
+  {
+    Serial.println("Stop at sunset");
+  }
+  else
+  {
+    // Do nothing: no stop time was set
+    b_stop = false;
+  }
+
+  // Process timezone
+  // Timezone is already added to start/stop time
+
+  Serial.println(String("Time zone: ") + t.getTZ());
+
+  // Get timezone offset (in seconds)
+  Serial.println(String("Time zone offset: ") + t.getTZ_Offset());
+  timezoneOffset = t.getTZ_Offset();
+
+  if (b_start && b_stop) {
+    b_force = false;
+  }
+
+
+  // weekday();         // day of the week (1-7), Sunday is day 1
+  // 1. Sunday, 2. Mon, 3. Tue, ...
+  Serial.println(String("Weekday ") + weekday());
+  int iWeekday;
+  iWeekday = weekday() - 1;
+  if (iWeekday == 0) {
+    iWeekday = 7;
+  }
+
+  int WorkingDay[7] = {0,0,0,0,0,0,0};
+
+  // Process weekdays (1. Mon, 2. Tue, 3. Wed, ...)
+  for (int i = 1; i <= 7; i++) {
+    if (t.isWeekdaySelected(i)) {
+      Serial.println(String("Day ") + i + " is selected");
+      WorkingDay[i-1] = 1;
+    }
+  }
+
+  if (WorkingDay[iWeekday-1] == 1) {
+    Serial.println("Working day");
+    b_current = true;
+  }
+  else {
+    b_current = false;
+  }
+
+  // setTime((time_t) now());
+  String currentTime = String(hour()) + ":" + minute() + ":" + second();
+  Serial.print("Current time: ");
+  Serial.println(currentTime);
+  Serial.println();
+  Serial.println(String("start2: ")+b_start+String(" stop2: ")+b_stop+String(" current2: ")+b_current+String(" force2: ")+b_force);
+  Serial.println();
+
+  if (b_current == false) {
+    switch3_1.relayOff();
+  }
+  switch3_1.begin(startTime, stopTime);
+  switch3_1.setState(true, true, b_current, false);
+}
+
+BLYNK_WRITE(V32)
+{
+  unsigned long startTime, stopTime;
+  bool b_start, b_stop, b_current, b_force;
+
+  long startTimeInSecs = param[0].asLong();
+  Serial.print("V3: Start time in secs: ");
+  Serial.println(startTimeInSecs);
+  Serial.println();
+
+  TimeInputParam t(param);
+  struct tm c_time;
+  time_t t_of_day;
+
+  // Process start time
+
+  if (t.hasStartTime())
+  {
+    Serial.println(String("Start: ") +
+                   t.getStartHour() + ":" +
+                   t.getStartMinute() + ":" +
+                   t.getStartSecond());
+
+
+
+     Serial.println(String("Year: ") + year() + String(" Month: ") + month() + String(" Day: ") + day());
+     c_time.tm_year = year()-1900;
+     c_time.tm_mon= month()-1;
+     c_time.tm_mday = day();
+     c_time.tm_hour = t.getStartHour();
+     c_time.tm_min = t.getStartMinute();
+     c_time.tm_sec = 0;
+     c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+     t_of_day = mktime(&c_time);
+     // printf("seconds since the Epoch: %ld\n", (long) t_of_day)
+     Serial.println(String("Start seconds since the Epoch: ") + t_of_day);
+     startTime = t_of_day;
+     b_start = true;
+  }
+  else if (t.isStartSunrise())
+  {
+    Serial.println("Start at sunrise");
+  }
+  else if (t.isStartSunset())
+  {
+    Serial.println("Start at sunset");
+  }
+  else
+  {
+    // Do nothing
+    b_start = false;
+  }
+
+  // Process stop time
+
+  if (t.hasStopTime())
+  {
+    Serial.println(String("Stop: ") +
+                   t.getStopHour() + ":" +
+                   t.getStopMinute() + ":" +
+                   t.getStopSecond());
+    Serial.println(String("Year: ") + year() + String(" Month: ") + month() + String(" Day: ") + day());
+     c_time.tm_year = year()-1900;
+     c_time.tm_mon= month()-1;
+     c_time.tm_mday = day();
+     c_time.tm_hour = t.getStopHour();
+     c_time.tm_min = t.getStopMinute();
+     c_time.tm_sec = 0;
+     c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+     t_of_day = mktime(&c_time);
+     // printf("seconds since the Epoch: %ld\n", (long) t_of_day)
+     Serial.println(String("Stop seconds since the Epoch: ") + t_of_day);
+     stopTime = t_of_day;
+     b_stop = true;
+  }
+  else if (t.isStopSunrise())
+  {
+    Serial.println("Stop at sunrise");
+  }
+  else if (t.isStopSunset())
+  {
+    Serial.println("Stop at sunset");
+  }
+  else
+  {
+    // Do nothing: no stop time was set
+    b_stop = false;
+  }
+
+  // Process timezone
+  // Timezone is already added to start/stop time
+
+  Serial.println(String("Time zone: ") + t.getTZ());
+
+  // Get timezone offset (in seconds)
+  Serial.println(String("Time zone offset: ") + t.getTZ_Offset());
+  timezoneOffset = t.getTZ_Offset();
+
+  if (b_start && b_stop) {
+    b_force = false;
+  }
+
+
+  // weekday();         // day of the week (1-7), Sunday is day 1
+  // 1. Sunday, 2. Mon, 3. Tue, ...
+  Serial.println(String("Weekday ") + weekday());
+  int iWeekday;
+  iWeekday = weekday() - 1;
+  if (iWeekday == 0) {
+    iWeekday = 7;
+  }
+
+  int WorkingDay[7] = {0,0,0,0,0,0,0};
+
+  // Process weekdays (1. Mon, 2. Tue, 3. Wed, ...)
+  for (int i = 1; i <= 7; i++) {
+    if (t.isWeekdaySelected(i)) {
+      Serial.println(String("Day ") + i + " is selected");
+      WorkingDay[i-1] = 1;
+    }
+  }
+
+  if (WorkingDay[iWeekday-1] == 1) {
+    Serial.println("Working day");
+    b_current = true;
+  }
+  else {
+    b_current = false;
+  }
+
+  // setTime((time_t) now());
+  String currentTime = String(hour()) + ":" + minute() + ":" + second();
+  Serial.print("Current time: ");
+  Serial.println(currentTime);
+  Serial.println();
+  Serial.println(String("start2: ")+b_start+String(" stop2: ")+b_stop+String(" current2: ")+b_current+String(" force2: ")+b_force);
+  Serial.println();
+
+  if (b_current == false) {
+    switch3_2.relayOff();
+  }
+  switch3_2.begin(startTime, stopTime);
+  switch3_2.setState(true, true, b_current, false);
+}
+
+BLYNK_WRITE(V33)
+{
+  unsigned long startTime, stopTime;
+  bool b_start, b_stop, b_current, b_force;
+
+  long startTimeInSecs = param[0].asLong();
+  Serial.print("V3: Start time in secs: ");
+  Serial.println(startTimeInSecs);
+  Serial.println();
+
+  TimeInputParam t(param);
+  struct tm c_time;
+  time_t t_of_day;
+
+  // Process start time
+
+  if (t.hasStartTime())
+  {
+    Serial.println(String("Start: ") +
+                   t.getStartHour() + ":" +
+                   t.getStartMinute() + ":" +
+                   t.getStartSecond());
+
+
+
+     Serial.println(String("Year: ") + year() + String(" Month: ") + month() + String(" Day: ") + day());
+     c_time.tm_year = year()-1900;
+     c_time.tm_mon= month()-1;
+     c_time.tm_mday = day();
+     c_time.tm_hour = t.getStartHour();
+     c_time.tm_min = t.getStartMinute();
+     c_time.tm_sec = 0;
+     c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+     t_of_day = mktime(&c_time);
+     // printf("seconds since the Epoch: %ld\n", (long) t_of_day)
+     Serial.println(String("Start seconds since the Epoch: ") + t_of_day);
+     startTime = t_of_day;
+     b_start = true;
+  }
+  else if (t.isStartSunrise())
+  {
+    Serial.println("Start at sunrise");
+  }
+  else if (t.isStartSunset())
+  {
+    Serial.println("Start at sunset");
+  }
+  else
+  {
+    // Do nothing
+    b_start = false;
+  }
+
+  // Process stop time
+
+  if (t.hasStopTime())
+  {
+    Serial.println(String("Stop: ") +
+                   t.getStopHour() + ":" +
+                   t.getStopMinute() + ":" +
+                   t.getStopSecond());
+    Serial.println(String("Year: ") + year() + String(" Month: ") + month() + String(" Day: ") + day());
+     c_time.tm_year = year()-1900;
+     c_time.tm_mon= month()-1;
+     c_time.tm_mday = day();
+     c_time.tm_hour = t.getStopHour();
+     c_time.tm_min = t.getStopMinute();
+     c_time.tm_sec = 0;
+     c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+     t_of_day = mktime(&c_time);
+     // printf("seconds since the Epoch: %ld\n", (long) t_of_day)
+     Serial.println(String("Stop seconds since the Epoch: ") + t_of_day);
+     stopTime = t_of_day;
+     b_stop = true;
+  }
+  else if (t.isStopSunrise())
+  {
+    Serial.println("Stop at sunrise");
+  }
+  else if (t.isStopSunset())
+  {
+    Serial.println("Stop at sunset");
+  }
+  else
+  {
+    // Do nothing: no stop time was set
+    b_stop = false;
+  }
+
+  // Process timezone
+  // Timezone is already added to start/stop time
+
+  Serial.println(String("Time zone: ") + t.getTZ());
+
+  // Get timezone offset (in seconds)
+  Serial.println(String("Time zone offset: ") + t.getTZ_Offset());
+  timezoneOffset = t.getTZ_Offset();
+
+  if (b_start && b_stop) {
+    b_force = false;
+  }
+
+
+  // weekday();         // day of the week (1-7), Sunday is day 1
+  // 1. Sunday, 2. Mon, 3. Tue, ...
+  Serial.println(String("Weekday ") + weekday());
+  int iWeekday;
+  iWeekday = weekday() - 1;
+  if (iWeekday == 0) {
+    iWeekday = 7;
+  }
+
+  int WorkingDay[7] = {0,0,0,0,0,0,0};
+
+  // Process weekdays (1. Mon, 2. Tue, 3. Wed, ...)
+  for (int i = 1; i <= 7; i++) {
+    if (t.isWeekdaySelected(i)) {
+      Serial.println(String("Day ") + i + " is selected");
+      WorkingDay[i-1] = 1;
+    }
+  }
+
+  if (WorkingDay[iWeekday-1] == 1) {
+    Serial.println("Working day");
+    b_current = true;
+  }
+  else {
+    b_current = false;
+  }
+
+  // setTime((time_t) now());
+  String currentTime = String(hour()) + ":" + minute() + ":" + second();
+  Serial.print("Current time: ");
+  Serial.println(currentTime);
+  Serial.println();
+  Serial.println(String("start2: ")+b_start+String(" stop2: ")+b_stop+String(" current2: ")+b_current+String(" force2: ")+b_force);
+  Serial.println();
+
+  if (b_current == false) {
+    switch3_3.relayOff();
+  }
+  switch3_3.begin(startTime, stopTime);
+  switch3_3.setState(true, true, b_current, false);
+}
+
+BLYNK_WRITE(V34)
+{
+  unsigned long startTime, stopTime;
+  bool b_start, b_stop, b_current, b_force;
+
+  long startTimeInSecs = param[0].asLong();
+  Serial.print("V3: Start time in secs: ");
+  Serial.println(startTimeInSecs);
+  Serial.println();
+
+  TimeInputParam t(param);
+  struct tm c_time;
+  time_t t_of_day;
+
+  // Process start time
+
+  if (t.hasStartTime())
+  {
+    Serial.println(String("Start: ") +
+                   t.getStartHour() + ":" +
+                   t.getStartMinute() + ":" +
+                   t.getStartSecond());
+
+
+
+     Serial.println(String("Year: ") + year() + String(" Month: ") + month() + String(" Day: ") + day());
+     c_time.tm_year = year()-1900;
+     c_time.tm_mon= month()-1;
+     c_time.tm_mday = day();
+     c_time.tm_hour = t.getStartHour();
+     c_time.tm_min = t.getStartMinute();
+     c_time.tm_sec = 0;
+     c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+     t_of_day = mktime(&c_time);
+     // printf("seconds since the Epoch: %ld\n", (long) t_of_day)
+     Serial.println(String("Start seconds since the Epoch: ") + t_of_day);
+     startTime = t_of_day;
+     b_start = true;
+  }
+  else if (t.isStartSunrise())
+  {
+    Serial.println("Start at sunrise");
+  }
+  else if (t.isStartSunset())
+  {
+    Serial.println("Start at sunset");
+  }
+  else
+  {
+    // Do nothing
+    b_start = false;
+  }
+
+  // Process stop time
+
+  if (t.hasStopTime())
+  {
+    Serial.println(String("Stop: ") +
+                   t.getStopHour() + ":" +
+                   t.getStopMinute() + ":" +
+                   t.getStopSecond());
+    Serial.println(String("Year: ") + year() + String(" Month: ") + month() + String(" Day: ") + day());
+     c_time.tm_year = year()-1900;
+     c_time.tm_mon= month()-1;
+     c_time.tm_mday = day();
+     c_time.tm_hour = t.getStopHour();
+     c_time.tm_min = t.getStopMinute();
+     c_time.tm_sec = 0;
+     c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+     t_of_day = mktime(&c_time);
+     // printf("seconds since the Epoch: %ld\n", (long) t_of_day)
+     Serial.println(String("Stop seconds since the Epoch: ") + t_of_day);
+     stopTime = t_of_day;
+     b_stop = true;
+  }
+  else if (t.isStopSunrise())
+  {
+    Serial.println("Stop at sunrise");
+  }
+  else if (t.isStopSunset())
+  {
+    Serial.println("Stop at sunset");
+  }
+  else
+  {
+    // Do nothing: no stop time was set
+    b_stop = false;
+  }
+
+  // Process timezone
+  // Timezone is already added to start/stop time
+
+  Serial.println(String("Time zone: ") + t.getTZ());
+
+  // Get timezone offset (in seconds)
+  Serial.println(String("Time zone offset: ") + t.getTZ_Offset());
+  timezoneOffset = t.getTZ_Offset();
+
+  if (b_start && b_stop) {
+    b_force = false;
+  }
+
+
+  // weekday();         // day of the week (1-7), Sunday is day 1
+  // 1. Sunday, 2. Mon, 3. Tue, ...
+  Serial.println(String("Weekday ") + weekday());
+  int iWeekday;
+  iWeekday = weekday() - 1;
+  if (iWeekday == 0) {
+    iWeekday = 7;
+  }
+
+  int WorkingDay[7] = {0,0,0,0,0,0,0};
+
+  // Process weekdays (1. Mon, 2. Tue, 3. Wed, ...)
+  for (int i = 1; i <= 7; i++) {
+    if (t.isWeekdaySelected(i)) {
+      Serial.println(String("Day ") + i + " is selected");
+      WorkingDay[i-1] = 1;
+    }
+  }
+
+  if (WorkingDay[iWeekday-1] == 1) {
+    Serial.println("Working day");
+    b_current = true;
+  }
+  else {
+    b_current = false;
+  }
+
+  // setTime((time_t) now());
+  String currentTime = String(hour()) + ":" + minute() + ":" + second();
+  Serial.print("Current time: ");
+  Serial.println(currentTime);
+  Serial.println();
+  Serial.println(String("start2: ")+b_start+String(" stop2: ")+b_stop+String(" current2: ")+b_current+String(" force2: ")+b_force);
+  Serial.println();
+
+  if (b_current == false) {
+    switch3_4.relayOff();
+  }
+  switch3_4.begin(startTime, stopTime);
+  switch3_4.setState(true, true, b_current, false);
+}
+
+BLYNK_WRITE(V41)
+{
+  unsigned long startTime, stopTime;
+  bool b_start, b_stop, b_current, b_force;
+
+  long startTimeInSecs = param[0].asLong();
+  Serial.print("V4: Start time in secs: ");
+  Serial.println(startTimeInSecs);
+  Serial.println();
+
+  TimeInputParam t(param);
+  struct tm c_time;
+  time_t t_of_day;
+
+  // Process start time
+  if (t.hasStartTime())
+  {
+    Serial.println(String("Start: ") +
+                   t.getStartHour() + ":" +
+                   t.getStartMinute() + ":" +
+                   t.getStartSecond());
+
+
+
+     Serial.println(String("Year: ") + year() + String(" Month: ") + month() + String(" Day: ") + day());
+     c_time.tm_year = year()-1900;
+     c_time.tm_mon= month()-1;
+     c_time.tm_mday = day();
+     c_time.tm_hour = t.getStartHour();
+     c_time.tm_min = t.getStartMinute();
+     c_time.tm_sec = 0;
+     c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+     t_of_day = mktime(&c_time);
+     // printf("seconds since the Epoch: %ld\n", (long) t_of_day)
+     Serial.println(String("Start seconds since the Epoch: ") + t_of_day);
+     startTime = t_of_day;
+     b_start = true;
+  }
+  else if (t.isStartSunrise())
+  {
+    Serial.println("Start at sunrise");
+  }
+  else if (t.isStartSunset())
+  {
+    Serial.println("Start at sunset");
+  }
+  else
+  {
+    // Do nothing
+    b_start = false;
+  }
+
+  // Process stop time
+
+  if (t.hasStopTime())
+  {
+    Serial.println(String("Stop: ") +
+                   t.getStopHour() + ":" +
+                   t.getStopMinute() + ":" +
+                   t.getStopSecond());
+    Serial.println(String("Year: ") + year() + String(" Month: ") + month() + String(" Day: ") + day());
+     c_time.tm_year = year()-1900;
+     c_time.tm_mon= month()-1;
+     c_time.tm_mday = day();
+     c_time.tm_hour = t.getStopHour();
+     c_time.tm_min = t.getStopMinute();
+     c_time.tm_sec = 0;
+     c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+     t_of_day = mktime(&c_time);
+     // printf("seconds since the Epoch: %ld\n", (long) t_of_day)
+     Serial.println(String("Stop seconds since the Epoch: ") + t_of_day);
+     stopTime = t_of_day;
+     b_stop = true;
+  }
+  else if (t.isStopSunrise())
+  {
+    Serial.println("Stop at sunrise");
+  }
+  else if (t.isStopSunset())
+  {
+    Serial.println("Stop at sunset");
+  }
+  else
+  {
+    // Do nothing: no stop time was set
+    b_stop = false;
+  }
+
+  // Process timezone
+  // Timezone is already added to start/stop time
+
+  Serial.println(String("Time zone: ") + t.getTZ());
+
+  // Get timezone offset (in seconds)
+  Serial.println(String("Time zone offset: ") + t.getTZ_Offset());
+  timezoneOffset = t.getTZ_Offset();
+
+  if (b_start && b_stop) {
+    b_force = false;
+  }
+
+
+  // weekday();         // day of the week (1-7), Sunday is day 1
+  // 1. Sunday, 2. Mon, 3. Tue, ...
+  Serial.println(String("Weekday ") + weekday());
+  int iWeekday;
+  iWeekday = weekday() - 1;
+  if (iWeekday == 0) {
+    iWeekday = 7;
+  }
+
+  int WorkingDay[7] = {0,0,0,0,0,0,0};
+
+  // Process weekdays (1. Mon, 2. Tue, 3. Wed, ...)
+  for (int i = 1; i <= 7; i++) {
+    if (t.isWeekdaySelected(i)) {
+      Serial.println(String("Day ") + i + " is selected");
+      WorkingDay[i-1] = 1;
+    }
+  }
+
+  if (WorkingDay[iWeekday-1] == 1) {
+    Serial.println("Working day");
+    b_current = true;
+  }
+  else {
+    b_current = false;
+  }
+
+  // setTime((time_t) now());
+  String currentTime = String(hour()) + ":" + minute() + ":" + second();
+  Serial.print("Current time: ");
+  Serial.println(currentTime);
+  Serial.println();
+  Serial.println(String("start2: ")+b_start+String(" stop2: ")+b_stop+String(" current2: ")+b_current+String(" force2: ")+b_force);
+  Serial.println();
+
+  if (b_current == false) {
+    switch4_1.relayOff();
+  }
+  switch4_1.begin(startTime, stopTime);
+  switch4_1.setState(true, true, b_current, false);
+
+}
+
+BLYNK_WRITE(V42)
+{
+  unsigned long startTime, stopTime;
+  bool b_start, b_stop, b_current, b_force;
+
+  long startTimeInSecs = param[0].asLong();
+  Serial.print("V4: Start time in secs: ");
+  Serial.println(startTimeInSecs);
+  Serial.println();
+
+  TimeInputParam t(param);
+  struct tm c_time;
+  time_t t_of_day;
+
+  // Process start time
+  if (t.hasStartTime())
+  {
+    Serial.println(String("Start: ") +
+                   t.getStartHour() + ":" +
+                   t.getStartMinute() + ":" +
+                   t.getStartSecond());
+
+
+
+     Serial.println(String("Year: ") + year() + String(" Month: ") + month() + String(" Day: ") + day());
+     c_time.tm_year = year()-1900;
+     c_time.tm_mon= month()-1;
+     c_time.tm_mday = day();
+     c_time.tm_hour = t.getStartHour();
+     c_time.tm_min = t.getStartMinute();
+     c_time.tm_sec = 0;
+     c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+     t_of_day = mktime(&c_time);
+     // printf("seconds since the Epoch: %ld\n", (long) t_of_day)
+     Serial.println(String("Start seconds since the Epoch: ") + t_of_day);
+     startTime = t_of_day;
+     b_start = true;
+  }
+  else if (t.isStartSunrise())
+  {
+    Serial.println("Start at sunrise");
+  }
+  else if (t.isStartSunset())
+  {
+    Serial.println("Start at sunset");
+  }
+  else
+  {
+    // Do nothing
+    b_start = false;
+  }
+
+  // Process stop time
+
+  if (t.hasStopTime())
+  {
+    Serial.println(String("Stop: ") +
+                   t.getStopHour() + ":" +
+                   t.getStopMinute() + ":" +
+                   t.getStopSecond());
+    Serial.println(String("Year: ") + year() + String(" Month: ") + month() + String(" Day: ") + day());
+     c_time.tm_year = year()-1900;
+     c_time.tm_mon= month()-1;
+     c_time.tm_mday = day();
+     c_time.tm_hour = t.getStopHour();
+     c_time.tm_min = t.getStopMinute();
+     c_time.tm_sec = 0;
+     c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+     t_of_day = mktime(&c_time);
+     // printf("seconds since the Epoch: %ld\n", (long) t_of_day)
+     Serial.println(String("Stop seconds since the Epoch: ") + t_of_day);
+     stopTime = t_of_day;
+     b_stop = true;
+  }
+  else if (t.isStopSunrise())
+  {
+    Serial.println("Stop at sunrise");
+  }
+  else if (t.isStopSunset())
+  {
+    Serial.println("Stop at sunset");
+  }
+  else
+  {
+    // Do nothing: no stop time was set
+    b_stop = false;
+  }
+
+  // Process timezone
+  // Timezone is already added to start/stop time
+
+  Serial.println(String("Time zone: ") + t.getTZ());
+
+  // Get timezone offset (in seconds)
+  Serial.println(String("Time zone offset: ") + t.getTZ_Offset());
+  timezoneOffset = t.getTZ_Offset();
+
+  if (b_start && b_stop) {
+    b_force = false;
+  }
+
+
+  // weekday();         // day of the week (1-7), Sunday is day 1
+  // 1. Sunday, 2. Mon, 3. Tue, ...
+  Serial.println(String("Weekday ") + weekday());
+  int iWeekday;
+  iWeekday = weekday() - 1;
+  if (iWeekday == 0) {
+    iWeekday = 7;
+  }
+
+  int WorkingDay[7] = {0,0,0,0,0,0,0};
+
+  // Process weekdays (1. Mon, 2. Tue, 3. Wed, ...)
+  for (int i = 1; i <= 7; i++) {
+    if (t.isWeekdaySelected(i)) {
+      Serial.println(String("Day ") + i + " is selected");
+      WorkingDay[i-1] = 1;
+    }
+  }
+
+  if (WorkingDay[iWeekday-1] == 1) {
+    Serial.println("Working day");
+    b_current = true;
+  }
+  else {
+    b_current = false;
+  }
+
+  // setTime((time_t) now());
+  String currentTime = String(hour()) + ":" + minute() + ":" + second();
+  Serial.print("Current time: ");
+  Serial.println(currentTime);
+  Serial.println();
+  Serial.println(String("start2: ")+b_start+String(" stop2: ")+b_stop+String(" current2: ")+b_current+String(" force2: ")+b_force);
+  Serial.println();
+
+  if (b_current == false) {
+    switch4_2.relayOff();
+  }
+  switch4_2.begin(startTime, stopTime);
+  switch4_2.setState(true, true, b_current, false);
+
+}
+
+BLYNK_WRITE(V43)
+{
+  unsigned long startTime, stopTime;
+  bool b_start, b_stop, b_current, b_force;
+
+  long startTimeInSecs = param[0].asLong();
+  Serial.print("V4: Start time in secs: ");
+  Serial.println(startTimeInSecs);
+  Serial.println();
+
+  TimeInputParam t(param);
+  struct tm c_time;
+  time_t t_of_day;
+
+  // Process start time
+  if (t.hasStartTime())
+  {
+    Serial.println(String("Start: ") +
+                   t.getStartHour() + ":" +
+                   t.getStartMinute() + ":" +
+                   t.getStartSecond());
+
+
+
+     Serial.println(String("Year: ") + year() + String(" Month: ") + month() + String(" Day: ") + day());
+     c_time.tm_year = year()-1900;
+     c_time.tm_mon= month()-1;
+     c_time.tm_mday = day();
+     c_time.tm_hour = t.getStartHour();
+     c_time.tm_min = t.getStartMinute();
+     c_time.tm_sec = 0;
+     c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+     t_of_day = mktime(&c_time);
+     // printf("seconds since the Epoch: %ld\n", (long) t_of_day)
+     Serial.println(String("Start seconds since the Epoch: ") + t_of_day);
+     startTime = t_of_day;
+     b_start = true;
+  }
+  else if (t.isStartSunrise())
+  {
+    Serial.println("Start at sunrise");
+  }
+  else if (t.isStartSunset())
+  {
+    Serial.println("Start at sunset");
+  }
+  else
+  {
+    // Do nothing
+    b_start = false;
+  }
+
+  // Process stop time
+
+  if (t.hasStopTime())
+  {
+    Serial.println(String("Stop: ") +
+                   t.getStopHour() + ":" +
+                   t.getStopMinute() + ":" +
+                   t.getStopSecond());
+    Serial.println(String("Year: ") + year() + String(" Month: ") + month() + String(" Day: ") + day());
+     c_time.tm_year = year()-1900;
+     c_time.tm_mon= month()-1;
+     c_time.tm_mday = day();
+     c_time.tm_hour = t.getStopHour();
+     c_time.tm_min = t.getStopMinute();
+     c_time.tm_sec = 0;
+     c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+     t_of_day = mktime(&c_time);
+     // printf("seconds since the Epoch: %ld\n", (long) t_of_day)
+     Serial.println(String("Stop seconds since the Epoch: ") + t_of_day);
+     stopTime = t_of_day;
+     b_stop = true;
+  }
+  else if (t.isStopSunrise())
+  {
+    Serial.println("Stop at sunrise");
+  }
+  else if (t.isStopSunset())
+  {
+    Serial.println("Stop at sunset");
+  }
+  else
+  {
+    // Do nothing: no stop time was set
+    b_stop = false;
+  }
+
+  // Process timezone
+  // Timezone is already added to start/stop time
+
+  Serial.println(String("Time zone: ") + t.getTZ());
+
+  // Get timezone offset (in seconds)
+  Serial.println(String("Time zone offset: ") + t.getTZ_Offset());
+  timezoneOffset = t.getTZ_Offset();
+
+  if (b_start && b_stop) {
+    b_force = false;
+  }
+
+
+  // weekday();         // day of the week (1-7), Sunday is day 1
+  // 1. Sunday, 2. Mon, 3. Tue, ...
+  Serial.println(String("Weekday ") + weekday());
+  int iWeekday;
+  iWeekday = weekday() - 1;
+  if (iWeekday == 0) {
+    iWeekday = 7;
+  }
+
+  int WorkingDay[7] = {0,0,0,0,0,0,0};
+
+  // Process weekdays (1. Mon, 2. Tue, 3. Wed, ...)
+  for (int i = 1; i <= 7; i++) {
+    if (t.isWeekdaySelected(i)) {
+      Serial.println(String("Day ") + i + " is selected");
+      WorkingDay[i-1] = 1;
+    }
+  }
+
+  if (WorkingDay[iWeekday-1] == 1) {
+    Serial.println("Working day");
+    b_current = true;
+  }
+  else {
+    b_current = false;
+  }
+
+  // setTime((time_t) now());
+  String currentTime = String(hour()) + ":" + minute() + ":" + second();
+  Serial.print("Current time: ");
+  Serial.println(currentTime);
+  Serial.println();
+  Serial.println(String("start2: ")+b_start+String(" stop2: ")+b_stop+String(" current2: ")+b_current+String(" force2: ")+b_force);
+  Serial.println();
+
+  if (b_current == false) {
+    switch4_3.relayOff();
+  }
+  switch4_3.begin(startTime, stopTime);
+  switch4_3.setState(true, true, b_current, false);
+
+
+}
+
+BLYNK_WRITE(V44)
+{
+  unsigned long startTime, stopTime;
+  bool b_start, b_stop, b_current, b_force;
+
+  long startTimeInSecs = param[0].asLong();
+  Serial.print("V4: Start time in secs: ");
+  Serial.println(startTimeInSecs);
+  Serial.println();
+
+  TimeInputParam t(param);
+  struct tm c_time;
+  time_t t_of_day;
+
+  // Process start time
+  if (t.hasStartTime())
+  {
+    Serial.println(String("Start: ") +
+                   t.getStartHour() + ":" +
+                   t.getStartMinute() + ":" +
+                   t.getStartSecond());
+
+
+
+     Serial.println(String("Year: ") + year() + String(" Month: ") + month() + String(" Day: ") + day());
+     c_time.tm_year = year()-1900;
+     c_time.tm_mon= month()-1;
+     c_time.tm_mday = day();
+     c_time.tm_hour = t.getStartHour();
+     c_time.tm_min = t.getStartMinute();
+     c_time.tm_sec = 0;
+     c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+     t_of_day = mktime(&c_time);
+     // printf("seconds since the Epoch: %ld\n", (long) t_of_day)
+     Serial.println(String("Start seconds since the Epoch: ") + t_of_day);
+     startTime = t_of_day;
+     b_start = true;
+  }
+  else if (t.isStartSunrise())
+  {
+    Serial.println("Start at sunrise");
+  }
+  else if (t.isStartSunset())
+  {
+    Serial.println("Start at sunset");
+  }
+  else
+  {
+    // Do nothing
+    b_start = false;
+  }
+
+  // Process stop time
+
+  if (t.hasStopTime())
+  {
+    Serial.println(String("Stop: ") +
+                   t.getStopHour() + ":" +
+                   t.getStopMinute() + ":" +
+                   t.getStopSecond());
+    Serial.println(String("Year: ") + year() + String(" Month: ") + month() + String(" Day: ") + day());
+     c_time.tm_year = year()-1900;
+     c_time.tm_mon= month()-1;
+     c_time.tm_mday = day();
+     c_time.tm_hour = t.getStopHour();
+     c_time.tm_min = t.getStopMinute();
+     c_time.tm_sec = 0;
+     c_time.tm_isdst = -1;        // Is DST on? 1 = yes, 0 = no, -1 = unknown
+     t_of_day = mktime(&c_time);
+     // printf("seconds since the Epoch: %ld\n", (long) t_of_day)
+     Serial.println(String("Stop seconds since the Epoch: ") + t_of_day);
+     stopTime = t_of_day;
+     b_stop = true;
+  }
+  else if (t.isStopSunrise())
+  {
+    Serial.println("Stop at sunrise");
+  }
+  else if (t.isStopSunset())
+  {
+    Serial.println("Stop at sunset");
+  }
+  else
+  {
+    // Do nothing: no stop time was set
+    b_stop = false;
+  }
+
+  // Process timezone
+  // Timezone is already added to start/stop time
+
+  Serial.println(String("Time zone: ") + t.getTZ());
+
+  // Get timezone offset (in seconds)
+  Serial.println(String("Time zone offset: ") + t.getTZ_Offset());
+  timezoneOffset = t.getTZ_Offset();
+
+  if (b_start && b_stop) {
+    b_force = false;
+  }
+
+
+  // weekday();         // day of the week (1-7), Sunday is day 1
+  // 1. Sunday, 2. Mon, 3. Tue, ...
+  Serial.println(String("Weekday ") + weekday());
+  int iWeekday;
+  iWeekday = weekday() - 1;
+  if (iWeekday == 0) {
+    iWeekday = 7;
+  }
+
+  int WorkingDay[7] = {0,0,0,0,0,0,0};
+
+  // Process weekdays (1. Mon, 2. Tue, 3. Wed, ...)
+  for (int i = 1; i <= 7; i++) {
+    if (t.isWeekdaySelected(i)) {
+      Serial.println(String("Day ") + i + " is selected");
+      WorkingDay[i-1] = 1;
+    }
+  }
+
+  if (WorkingDay[iWeekday-1] == 1) {
+    Serial.println("Working day");
+    b_current = true;
+  }
+  else {
+    b_current = false;
+  }
+
+  // setTime((time_t) now());
+  String currentTime = String(hour()) + ":" + minute() + ":" + second();
+  Serial.print("Current time: ");
+  Serial.println(currentTime);
+  Serial.println();
+  Serial.println(String("start2: ")+b_start+String(" stop2: ")+b_stop+String(" current2: ")+b_current+String(" force2: ")+b_force);
+  Serial.println();
+
+  if (b_current == false) {
+    switch4_4.relayOff();
+  }
+  switch4_4.begin(startTime, stopTime);
+  switch4_4.setState(true, true, b_current, false);
+
+}
 
 BLYNK_CONNECTED()
 {
