@@ -982,6 +982,7 @@ void relay1_onoff(bool set)
 
   Serial.print("Valve 1: ");
   Serial.println(set);
+  delay(300);
 
   if (set) {
     ON1 = true;
@@ -1030,6 +1031,7 @@ void relay2_onoff(bool set)
 
 
   Serial.println("Valve 2");
+  delay(300);
 
   if (set) {
     ON2 = true;
@@ -1078,6 +1080,7 @@ void relay3_onoff(bool set)
 
 
   Serial.println("Valve 3");
+  delay(300);
 
   if (set) {
     ON3 = true;
@@ -1131,7 +1134,7 @@ void relay4_onoff(bool set)
 
 
   Serial.println("Valve 4");
-
+  delay(300);
 
   if (set) {
     ON4 = true;
@@ -1420,6 +1423,7 @@ BLYNK_WRITE(V2)
     Serial.println("switch 2 just pressed");
 
     relay2_onoff(true);
+    _schedule2 = true;
     switch2_1.relayOn();
     switch2_2.relayOn();
     force2 = true;
@@ -1428,6 +1432,7 @@ BLYNK_WRITE(V2)
   }
   else {
     relay2_onoff(false);
+    _schedule2 = false;
     switch2_1.relayOff();
     switch2_2.relayOff();
     force2 = true;
@@ -1448,6 +1453,7 @@ BLYNK_WRITE(V3)
     Serial.println("switch 3 just pressed");
 
     relay3_onoff(true);
+    _schedule3 = true;
     switch3_1.relayOn();
     switch3_2.relayOn();
     switch3_3.relayOn();
@@ -1458,6 +1464,7 @@ BLYNK_WRITE(V3)
   }
   else {
     relay3_onoff(false);
+    _schedule3 = false;
     switch3_1.relayOff();
     switch3_2.relayOff();
     switch3_3.relayOff();
@@ -1482,6 +1489,7 @@ BLYNK_WRITE(V4)
     Serial.println("switch 4 just pressed");
 
     relay4_onoff(true);
+    _schedule4 = true;
     switch4_1.relayOn();
     switch4_2.relayOn();
     switch4_3.relayOn();
@@ -1492,6 +1500,7 @@ BLYNK_WRITE(V4)
   }
   else {
     relay4_onoff(false);
+    _schedule4 = false;
     switch4_1.relayOff();
     switch4_2.relayOff();
     switch4_3.relayOff();
