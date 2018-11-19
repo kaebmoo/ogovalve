@@ -266,6 +266,7 @@ int minADC = 0;                       // replace with min ADC value read in air
 int maxADC = 928;                     // replace with max ADC value read fully submerged in water
 int soilMoistureSetPoint = 50;
 int soilMoisture, mappedValue;
+int range = 10;
 
 void setup()
 {
@@ -2494,6 +2495,14 @@ BLYNK_WRITE(V62)
   Serial.println(soilMoistureSetPoint);
 }
 
+BLYNK_WRITE(V63)
+{
+  range = param.asInt();
+  Serial.print("Range: ");
+  Serial.println(range);
+  Serial.println();
+}
+
 BLYNK_WRITE(V28)
 {
   unsigned long startTime, stopTime;
@@ -3969,6 +3978,10 @@ BLYNK_CONNECTED()
   Blynk.virtualWrite(V3, digitalRead(RELAY3));
   Blynk.virtualWrite(V4, digitalRead(RELAY4));
 
+  // Synchonize soil moisture paramenter
+  Blynk.syncVirtual(V62);
+  Blynk.syncVirtual(V63);
+  
   // Synchonize button
   Blynk.syncVirtual(V1);
   Blynk.syncVirtual(V2);
@@ -4039,7 +4052,7 @@ void soilMoistureSensor()
   Serial.print("Moisture value = " );
   Serial.println(mappedValue);
 
-  if (mappedValue > soilMoistureSetPoint) {
+  if (mappedValue > (soilMoistureSetPoint + range)) {
     Serial.println("High Moisture");
     Serial.println("Soil Moisture: Turn Relay Off");
     WET4 = true;
@@ -4047,7 +4060,7 @@ void soilMoistureSensor()
     WET2 = true;
     WET1 = true;    
   }
-  else {
+  else if (mappedValue < (soilMoistureSetPoint - range)) {
     Serial.println("Low Moisture");
     Serial.println("Soil Moisture: Turn Relay On");
     WET4 = false;
