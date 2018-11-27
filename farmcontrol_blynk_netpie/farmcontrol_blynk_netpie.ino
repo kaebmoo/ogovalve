@@ -1656,7 +1656,9 @@ BLYNK_WRITE(V10)
   }
   else {
     bcurrent1 = false;
+    _schedule1 = false;
   }
+
 
   // setTime((time_t) now());
   String currentTime = String(hour()) + ":" + minute() + ":" + second();
@@ -1793,8 +1795,11 @@ BLYNK_WRITE(V11)
   }
   else {
     bcurrent2 = false;
+    _schedule2 = false;
   }
 
+  
+  
   // setTime((time_t) now());
   String currentTime = String(hour()) + ":" + minute() + ":" + second();
   Serial.print("Current time: ");
@@ -1954,8 +1959,10 @@ BLYNK_WRITE(V12)
   }
   else {
     bcurrent3 = false;
+    _schedule3 = false;
   }
 
+  
   // setTime((time_t) now());
   String currentTime = String(hour()) + ":" + minute() + ":" + second();
   Serial.print("Current time: ");
@@ -2091,7 +2098,10 @@ BLYNK_WRITE(V13)
   }
   else {
     bcurrent4 = false;
+    _schedule4 = false;
   }
+
+
 
   // setTime((time_t) now());
   String currentTime = String(hour()) + ":" + minute() + ":" + second();
