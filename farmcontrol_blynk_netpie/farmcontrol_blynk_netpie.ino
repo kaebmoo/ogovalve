@@ -241,10 +241,12 @@ int blynkreconnect = 0;
 
 
 // netpie.io
+#ifdef NETPIE
 #include <AuthClient.h>
 #include <MicroGear.h>
 #include <MQTTClient.h>
 #include <SHA1.h>
+#endif
 
 #define APPID "ogoControl"
 #define KEY "SdrEJ2HTAfQmbCB"
@@ -252,7 +254,10 @@ int blynkreconnect = 0;
 
 WiFiClient client;
 
+#ifdef NETPIE
 MicroGear microgear(client);
+#endif
+
 String channelName = "aiJZ77WVXc5YIP0HVrOtvTyzHMiPlR07";
 char *myRoom = "/ogoControl/room/aiJZ77WVXc5YIP0HVrOtvTyzHMiPlR07";
 char *iamWet1 = "/ogoControl/room/aiJZ77WVXc5YIP0HVrOtvTyzHMiPlR07/1/wet";
