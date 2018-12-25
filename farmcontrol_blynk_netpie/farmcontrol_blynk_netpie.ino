@@ -35,7 +35,7 @@ SOFTWARE.
 #define BLYNKLOCAL
 // #define ONECHANNEL
 #define FOURCHANNEL
-// #define ONDEMANDWIFI
+#define ONDEMANDWIFI
 
 #include "ESP8266WiFi.h"
 #include <BlynkSimpleEsp8266.h>
@@ -276,6 +276,7 @@ int range = 10;
 void setup()
 {
   byte i;
+  int retry2Connect = 0;
 
   // start serial port at 9600 bps and wait for port to open:
   Serial.begin(115200);
@@ -315,6 +316,7 @@ void setup()
 
 
   delay(2000);
+  readConfig();
 
   #ifdef ONDEMANDWIFI
   Serial.println();
@@ -324,12 +326,18 @@ void setup()
   String PSK = WiFi.psk();
   WiFi.begin(SSID.c_str(), PSK.c_str());
   Serial.print("Connecting");
+
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
 
     if ( digitalRead(TRIGGER_PIN) == LOW ) {
       ondemandWiFi();
+    }
+    retry2Connect++;
+    if (retry2Connect >= 30) {      
+      ondemandWiFi();
+      break;
     }
   }
   Serial.println();
@@ -373,7 +381,7 @@ void setup()
   // timer_display.every(1000L, display_zone1, 1);
 
   upintheair();
-  blynk_timer.setInterval(60000L, checkBlynkConnection);
+  blynk_timer.setInterval(15000L, checkBlynkConnection);
   blynk_timer.setInterval(60000L, syncSchedule);
   blynk_timer.setInterval(5000L, soilMoistureSensor);
   
@@ -766,12 +774,8 @@ void upintheair()
   // ESPhttpUpdate.update("www.ogonan.com", 80, "/ogoupdate/farmcontrol_blynk.ino.d1_mini.bin");
 }
 
-#ifdef ONDEMANDWIFI
-void ondemandWiFi()
+void readConfig() 
 {
-  WiFiManager wifiManager;
-  String apName;
-
   EEPROM.begin(512);
   readEEPROM(auth, 60, 32);
   Serial.print("auth token : ");
@@ -780,6 +784,18 @@ void ondemandWiFi()
   if (saved == 6550) {
     strcpy(c_auth, auth);
   }
+}
+
+#ifdef ONDEMANDWIFI
+void ondemandWiFi()
+{
+  WiFiManager wifiManager;
+  String apName;
+
+  
+  wifiManager.setBreakAfterConfig(true);
+  wifiManager.setConfigPortalTimeout(60);
+  
   WiFiManagerParameter custom_c_auth("c_auth", "Auth Token", c_auth, 37);
   wifiManager.setSaveConfigCallback(saveConfigCallback);
   wifiManager.addParameter(&custom_c_auth);
@@ -824,15 +840,10 @@ int setupWifi()
 
   WiFiManager wifiManager;
   String APName;
-
-  EEPROM.begin(512);
-  readEEPROM(auth, 60, 32);
-  Serial.print("auth token : ");
-  Serial.println(auth);
-  int saved = eeGetInt(500);
-  if (saved == 6550) {
-    strcpy(c_auth, auth);
-  }
+  
+  wifiManager.setBreakAfterConfig(true);
+  wifiManager.setConfigPortalTimeout(60);
+  
   WiFiManagerParameter custom_c_auth("c_auth", "Auth Token", c_auth, 37);
   wifiManager.setSaveConfigCallback(saveConfigCallback);
   wifiManager.addParameter(&custom_c_auth);
