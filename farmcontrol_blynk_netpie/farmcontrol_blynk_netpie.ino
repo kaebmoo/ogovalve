@@ -205,9 +205,9 @@ const int RELAY2 = D6;
 const int RELAY3 = D7;
 const int RELAY4 = D8;
 const int analogReadPin = A0;               // read for set options Soil Moisture or else ...
-#define TRIGGER_PIN D0
+#define TRIGGER_PIN D3
 
-TM1637Display display(CLK, DIO);
+// TM1637Display display(CLK, DIO);
 
 // I2C Relayboard test
 // connect VDD to power 5V
@@ -283,15 +283,15 @@ void setup()
   Serial.begin(115200);
   uint8_t data[] = { 0x00, 0x00, 0x00, 0x00 };
 
-  display.setSegments(data);
-  display.setBrightness(0x0a);
+  // display.setSegments(data);
+  // display.setBrightness(0x0a);
 
   data[0] = 0x06;
   data[1] = 0x54;
   data[2] = 0x06;
   data[3] = 0x78;
 
-  display.setSegments(data);
+  // display.setSegments(data);
 
   pixels.begin(); // This initializes the NeoPixel library.
   pixels.setBrightness(64);
@@ -299,6 +299,7 @@ void setup()
   Serial.println();
   #ifdef ONDEMANDWIFI
   pinMode(TRIGGER_PIN, INPUT);
+  digitalWrite(TRIGGER_PIN, HIGH);
   #endif
   pinMode(RELAY1, OUTPUT);
   pinMode(RELAY2, OUTPUT);
@@ -355,12 +356,15 @@ void setup()
 
     #ifdef BLYNKLOCAL
     Blynk.config(auth, "ogoservice.ogonan.com", 80);  // in place of Blynk.begin(auth, ssid, pass);
+    Serial.println("Blynk ogonan.com");
     #endif
     #ifdef FARMLOCAL
     Blynk.config(auth, "192.168.2.64", 80);  // in place of Blynk.begin(auth, ssid, pass);
+    Serial.println("Blynk local farm");
     #endif
     #ifdef BLYNK
     Blynk.config(auth);  // in place of Blynk.begin(auth, ssid, pass);
+    Serial.println("Blynk Cloud");
     #endif
     Serial.print("Blynk connecting : ");
     bool result = Blynk.connect(3333);  // timeout set to 10 seconds and then continue without Blynk, 3333 is 10 seconds because Blynk.connect is in 3ms units.
@@ -482,7 +486,7 @@ void loop()
         data[1] = 0x73;
         data[2] = 0x79;
         data[3] = 0x50;
-        display.setSegments(data);
+        // display.setSegments(data);
         ledState = HIGH;
         // led_status.on();
         //Serial.println(digitalRead(D8));    // wemos input
@@ -500,7 +504,7 @@ void loop()
         data[1] = 0x00;
         data[2] = 0x00;
         data[3] = 0x00;
-        display.setSegments(data);
+        // display.setSegments(data);
         ledState = LOW;
         // led_status.off();
 
@@ -549,6 +553,7 @@ void relayStatus()
   else {
     if (ON2) {
       // relayOff();
+      Serial.println("Relay 2 OFF. relayStatus()");
       relay2_onoff(false);
     }
   }
@@ -566,6 +571,7 @@ void relayStatus()
   else {
     if (ON3) {
       // relayOff();
+      Serial.println("Relay 3 OFF. relayStatus()");
       relay3_onoff(false);
     }
   }
@@ -574,6 +580,7 @@ void relayStatus()
   schedule1 = switch4_2.getRelayState();
   schedule2 = switch4_3.getRelayState();
   schedule3 = switch4_4.getRelayState();
+  // Serial.println(String("Schedule 4: ") + schedule0 + String(" ") + schedule1 + String(" ") + schedule2 + String(" ") + schedule3 + String(" ") + _schedule4);
   if (schedule0 || schedule1 || schedule2 || schedule3 || _schedule4) {
     if (!ON4) {
       // relayOn();
@@ -583,6 +590,7 @@ void relayStatus()
   else {
     if (ON4) {
       // relayOff();
+      Serial.println("Relay 4 OFF. relayStatus()");
       relay4_onoff(false);
     }
   }
@@ -998,8 +1006,8 @@ void check_switches()
 void relay1_onoff(bool set)
 {
   uint8_t data[] = { 0x78, 0x00, 0x00, 0x00 }; // t
-  display.setSegments(data);
-  display.showNumberDecEx(115, (0x80 >> 1), false, 3, 1);
+  // display.setSegments(data);
+  // display.showNumberDecEx(115, (0x80 >> 1), false, 3, 1);
 
 
   Serial.print("Valve 1: ");
@@ -1048,8 +1056,8 @@ void relay1_onoff(bool set)
 void relay2_onoff(bool set)
 {
   uint8_t data[] = { 0x78, 0x00, 0x00, 0x00 }; // t
-  display.setSegments(data);
-  display.showNumberDecEx(215, (0x80 >> 1), false, 3, 1);
+  // display.setSegments(data);
+  // display.showNumberDecEx(215, (0x80 >> 1), false, 3, 1);
 
 
   Serial.println("Valve 2");
@@ -1097,8 +1105,8 @@ void relay2_onoff(bool set)
 void relay3_onoff(bool set)
 {
   uint8_t data[] = { 0x78, 0x00, 0x00, 0x00 }; // t
-  display.setSegments(data);
-  display.showNumberDecEx(315, (0x80 >> 1), false, 3, 1);
+  // display.setSegments(data);
+  // display.showNumberDecEx(315, (0x80 >> 1), false, 3, 1);
 
 
   Serial.println("Valve 3");
@@ -1151,8 +1159,8 @@ void relay3_onoff(bool set)
 void relay4_onoff(bool set)
 {
   uint8_t data[] = { 0x78, 0x00, 0x00, 0x00 }; // t
-  display.setSegments(data);
-  display.showNumberDecEx(415, (0x80 >> 1), false, 3, 1);
+  // display.setSegments(data);
+  // display.showNumberDecEx(415, (0x80 >> 1), false, 3, 1);
 
 
   Serial.println("Valve 4");
