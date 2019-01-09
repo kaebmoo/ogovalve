@@ -32,7 +32,8 @@ SOFTWARE.
  *
 */
 
-#define BLYNKLOCAL
+// #define BLYNKLOCAL
+#define FARMLOCAL
 // #define ONECHANNEL
 #define FOURCHANNEL
 #define ONDEMANDWIFI
@@ -354,7 +355,11 @@ void setup()
 
     #ifdef BLYNKLOCAL
     Blynk.config(auth, "ogoservice.ogonan.com", 80);  // in place of Blynk.begin(auth, ssid, pass);
-    #else
+    #endif
+    #ifdef FARMLOCAL
+    Blynk.config(auth, "192.168.2.64", 80);  // in place of Blynk.begin(auth, ssid, pass);
+    #endif
+    #ifdef BLYNK
     Blynk.config(auth);  // in place of Blynk.begin(auth, ssid, pass);
     #endif
     Serial.print("Blynk connecting : ");
