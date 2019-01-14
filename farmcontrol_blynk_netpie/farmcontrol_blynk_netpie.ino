@@ -117,6 +117,7 @@ bool blynkConnectedResult = false;
 bool schedule = false; // run once per day
 
 bool _schedule1, _schedule2, _schedule3, _schedule4;  // check relay #1, #2, #3, #4 state 
+bool _scheduleZone1;
 bool zone2Pattern = false;
 bool WET1 = false;
 bool WET2 = false;
@@ -530,7 +531,7 @@ void relayStatus()
 {
   int schedule0, schedule1, schedule2, schedule3;
 
-  if (_schedule1) {
+  if (_schedule1 || _scheduleZone1) {
     if (!ON1) {
       relay1_onoff(true);
     }
@@ -1370,14 +1371,14 @@ void checkvalidtime4()
 
 void zone1On()
 {
-  _schedule1 = true;
+  _scheduleZone1 = true;
   relay1_onoff(true);
   Blynk.virtualWrite(V1, 1);
 }
 
 void zone1Off()
 {
-  _schedule1 = false;
+  _scheduleZone1 = false;
   relay1_onoff(false);
   Blynk.virtualWrite(V1, 0);
   Serial.println("Relay 1 OFF. zone1Off()");
