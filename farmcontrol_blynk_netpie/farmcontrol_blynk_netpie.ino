@@ -1370,12 +1370,14 @@ void checkvalidtime4()
 
 void zone1On()
 {
+  _schedule1 = true;
   relay1_onoff(true);
   Blynk.virtualWrite(V1, 1);
 }
 
 void zone1Off()
 {
+  _schedule1 = false;
   relay1_onoff(false);
   Blynk.virtualWrite(V1, 0);
   Serial.println("Relay 1 OFF. zone1Off()");
@@ -1411,6 +1413,7 @@ void zone2Repeats() {
   Serial.print("working time: ");
   Serial.println( workingTime );
 
+  _schedule2 = true;
   relay2_onoff(true);
   Blynk.virtualWrite(V2, 1);
   workingTimeout = workingTime * 60 * 1000;
@@ -1418,6 +1421,7 @@ void zone2Repeats() {
 }
 
 void zone2Off() {
+  _schedule2 = false;
   relay2_onoff(false);
   Blynk.virtualWrite(V2, 0);
 }
@@ -2418,23 +2422,43 @@ int callAlarmTimer(unsigned int startHour, unsigned int startMin, unsigned int s
 
   if (alarmIdTime[timeId] == dtINVALID_ALARM_ID) {
       alarmIdTime[timeId] = Alarm.alarmOnce(startHour, startMin, 0, zone1On);
+      Serial.print("Start time: ");
+      Serial.print(startHour);
+      Serial.print(":");
+      Serial.print(startMin);
+      Serial.println();
       Serial.println("Start Time Activated :-)");
   }
   else {
     Alarm.free(alarmIdTime[timeId]);
     // alarmIdTime[timeId] = dtINVALID_ALARM_ID;
     alarmIdTime[timeId] = Alarm.alarmOnce(startHour, startMin, 0, zone1On);
+    Serial.print("Start time: ");
+    Serial.print(startHour);
+    Serial.print(":");
+    Serial.print(startMin);
+    Serial.println();
     Serial.println("Start Time Activated");
   }
 
   if (alarmIdTime[timeId+8] == dtINVALID_ALARM_ID) {
       alarmIdTime[timeId+8] = Alarm.alarmOnce(stopHour, stopMin, 0, zone1Off);
+      Serial.print("Stop time: ");
+      Serial.print(stopHour);
+      Serial.print(":");
+      Serial.print(stopMin);
+      Serial.println();
       Serial.println("Stop Time Activated :-)");
   }
   else {
     Alarm.free(alarmIdTime[timeId+8]);
     // alarmIdTime[timeId+8] = dtINVALID_ALARM_ID;
     alarmIdTime[timeId+8] = Alarm.alarmOnce(stopHour, stopMin, 0, zone1Off);
+    Serial.print("Stop time: ");
+    Serial.print(stopHour);
+    Serial.print(":");
+    Serial.print(stopMin);
+    Serial.println();
     Serial.println("Stop Time Activated");
   }
 }
