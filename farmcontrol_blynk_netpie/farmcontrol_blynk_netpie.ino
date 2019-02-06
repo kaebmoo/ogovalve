@@ -32,11 +32,12 @@ SOFTWARE.
  *
 */
 
-// #define BLYNKLOCAL
-#define FARMLOCAL
+#define BLYNKLOCAL
+// #define FARMLOCAL
 // #define ONECHANNEL
 #define FOURCHANNEL
 #define ONDEMANDWIFI
+#define THINGSBOARD
 
 #include "ESP8266WiFi.h"
 #include <BlynkSimpleEsp8266.h>
@@ -65,6 +66,7 @@ SOFTWARE.
 #include <Adafruit_NeoPixel.h>
 
 #include <ArduinoJson.h>
+#include <PubSubClient.h>
 #include <TimeLord.h>
 
 #include "CheckValidTime.h"
@@ -89,6 +91,17 @@ String firmwareName = "farmcontrol_blynk_netpie4ch.ino.d1_mini";
 #else
 String firmwareName = "farmcontrol_blynk_netpie.ino.d1_mini";
 #endif
+
+
+int mqttPort = 1883;
+char thingsboardServer[] = "thingsboard.ogonan.com";
+char mqtt_port[] = "1883";
+char api_token[] = "0G9xgfLLIOxth13P9gDy";
+
+char c_thingsboardServer[] = "thingsboard.ogonan.com";
+char c_mqtt_port[] = "1883";
+char c_api_token[] = "0G9xgfLLIOxth13P9gDy";
+
 
 // internet control
 // You should get Auth Token in the Blynk App.
@@ -240,7 +253,7 @@ int ledState = LOW;                   // ledState used to set the LED
 // check wifi status connected
 int wifi_connected = 1;
 int blynkreconnect = 0;
-
+int status = WL_IDLE_STATUS;
 
 // netpie.io
 #ifdef NETPIE
@@ -254,10 +267,12 @@ int blynkreconnect = 0;
 #define KEY "SdrEJ2HTAfQmbCB"
 #define SECRET "tMh2gL9C7o2VxHaYYgl5FdVep"
 
-WiFiClient client;
+WiFiClient wifiClient;
+PubSubClient client(wifiClient);
+
 
 #ifdef NETPIE
-MicroGear microgear(client);
+MicroGear microgear(wifiClient);
 #endif
 
 String channelName = "aiJZ77WVXc5YIP0HVrOtvTyzHMiPlR07";
@@ -274,6 +289,8 @@ int maxADC = 928;                     // replace with max ADC value read fully s
 int soilMoistureSetPoint = 50;
 int soilMoisture, mappedValue;
 int range = 10;
+
+boolean gpioState[] = {false, false};
 
 void setup()
 {
@@ -354,6 +371,11 @@ void setup()
   // wifi_connected = WiFi.begin("Redmi", "12345678"); // WL_CONNECTED
   if (wifi_connected == 0) {
     delay(500);
+
+    #ifdef THINGSBOARD
+    client.setServer( thingsboardServer, mqttPort );
+    client.setCallback(on_message);
+    #endif
 
     #ifdef BLYNKLOCAL
     Blynk.config(auth, "ogoservice.ogonan.com", 80);  // in place of Blynk.begin(auth, ssid, pass);
@@ -519,6 +541,15 @@ void loop()
 
 
   }
+
+  #ifdef THINGSBOARD
+  
+  if ( !client.connected() ) {
+    reconnect();
+  }
+
+  client.loop();
+  #endif
 
   #ifdef NETPIE
   if (microgear.connected()) {
@@ -4151,6 +4182,120 @@ void soilMoistureSensor()
   Serial.println();
 }
 
+// The callback for when a PUBLISH message is received from the server.
+void on_message(const char* topic, byte* payload, unsigned int length) 
+{
+  Serial.println("On message");
+
+  char json[length + 1];
+  strncpy (json, (char*)payload, length);
+  json[length] = '\0';
+
+  Serial.print("Topic: ");
+  Serial.println(topic);
+  Serial.print("Message: ");
+  Serial.println(json);
+
+  // Decode JSON request
+  StaticJsonBuffer<200> jsonBuffer;
+  JsonObject& data = jsonBuffer.parseObject((char*)json);
+
+  if (!data.success())
+  {
+    Serial.println("parseObject() failed");
+    return;
+  }
+
+  // Check request method
+  String methodName = String((const char*)data["method"]);
+
+  if (methodName.equals("getGpioStatus")) {
+    // Reply with GPIO status
+    String responseTopic = String(topic);
+    responseTopic.replace("request", "response");
+    client.publish(responseTopic.c_str(), get_gpio_status().c_str());
+  } 
+  else if (methodName.equals("turnOff")) 
+  {
+    // Update GPIO status and reply
+    set_gpio_status(false);
+    WET4 = true;
+    WET3 = true;
+    WET2 = true;
+    WET1 = true;
+    
+    String responseTopic = String(topic);
+    responseTopic.replace("request", "response");
+    client.publish(responseTopic.c_str(), get_gpio_status().c_str());
+    client.publish("v1/devices/me/telemetry", get_gpio_status().c_str());
+  }
+  else if (methodName.equals("turnOn")) 
+  {
+    // Update GPIO status and reply
+    set_gpio_status(true);
+    WET4 = false;
+    WET3 = false;
+    WET2 = false;
+    WET1 = false;
+    
+    String responseTopic = String(topic);
+    responseTopic.replace("request", "response");
+    client.publish(responseTopic.c_str(), get_gpio_status().c_str());
+    client.publish("v1/devices/me/telemetry", get_gpio_status().c_str());
+  }
+  
+}
+
+String get_gpio_status() {
+  // Prepare gpios JSON payload string
+  StaticJsonBuffer<200> jsonBuffer;
+  JsonObject& data = jsonBuffer.createObject();
+  data[String("ON")] = gpioState[0] ? true : false;
+  
+  char payload[256];
+  data.printTo(payload, sizeof(payload));
+  String strPayload = String(payload);
+  Serial.print("Get gpio status: ");
+  Serial.println(strPayload);
+  return strPayload;
+}
+
+void set_gpio_status(bool enabled) {
+  Serial.print("Set Relay state: ");
+  Serial.println(enabled);
+  // Output GPIOs state
+  // digitalWrite(RELAY1, enabled ? HIGH : LOW);
+  // Update GPIOs state
+  gpioState[0] = enabled;
+}
+
+void reconnect() 
+{
+  // Loop until we're reconnected
+  while (!client.connected()) {
+    status = WiFi.status();
+    if ( status != WL_CONNECTED) {
+      
+      Serial.println("WiFi Disconnected.");
+    }
+    Serial.print("Connecting to ThingsBoard node ...");
+    // Attempt to connect (clientId, username, password)
+    if ( client.connect("ESP8266 Switch Device", api_token, NULL) ) {
+      Serial.println( "[DONE]" );
+      // Subscribing to receive RPC requests
+      client.subscribe("v1/devices/me/rpc/request/+");
+      // Sending current GPIO status
+      Serial.println("Sending current GPIO status ...");
+      client.publish("v1/devices/me/telemetry", get_gpio_status().c_str());
+    } else {
+      Serial.print( "[FAILED] [ rc = " );
+      Serial.print( client.state() );
+      Serial.println( " : retrying in 5 seconds]" );
+      // Wait 5 seconds before retrying
+      delay( 5000 );
+    }
+  }
+}
 
 #ifdef NETPIE
 void onMsghandler(char *topic, uint8_t* msg, unsigned int msglen) {
