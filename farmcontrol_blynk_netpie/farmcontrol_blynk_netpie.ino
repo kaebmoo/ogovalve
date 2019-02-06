@@ -38,6 +38,7 @@ SOFTWARE.
 #define FOURCHANNEL
 #define ONDEMANDWIFI
 #define THINGSBOARD
+#define EXTERNALSENSOR
 
 #include "ESP8266WiFi.h"
 #include <BlynkSimpleEsp8266.h>
@@ -290,7 +291,7 @@ int soilMoistureSetPoint = 50;
 int soilMoisture, mappedValue;
 int range = 10;
 
-boolean gpioState[] = {false, false};
+boolean gpioState[] = {false, false, false, false};
 
 void setup()
 {
@@ -415,13 +416,17 @@ void setup()
   upintheair();
   blynk_timer.setInterval(15000L, checkBlynkConnection);
   blynk_timer.setInterval(60000L, syncSchedule);
+  #ifdef INTERNALSENSOR
   blynk_timer.setInterval(5000L, soilMoistureSensor);
+  #endif
   
   syncZone();
   display_zone1();
 
   delay(1000);
+  #ifdef INTERNALSENSOR
   soilMoistureSensor();
+  #endif
   delay(1000);
 
   #ifdef NETPIE
@@ -4209,34 +4214,108 @@ void on_message(const char* topic, byte* payload, unsigned int length)
   // Check request method
   String methodName = String((const char*)data["method"]);
 
+  // Check request parameter
+  String params = String((const char*)data["params"]);
+
   if (methodName.equals("getGpioStatus")) {
     // Reply with GPIO status
     String responseTopic = String(topic);
     responseTopic.replace("request", "response");
     client.publish(responseTopic.c_str(), get_gpio_status().c_str());
   } 
-  else if (methodName.equals("turnOff")) 
+  else if (methodName.equals("WET1")) 
   {
     // Update GPIO status and reply
-    set_gpio_status(false);
+    if (params.equals("0")) { // turn off
+      WET1 = true;
+      set_gpio_status(0, false);    
+    }
+    else {
+      WET1 = false;
+      set_gpio_status(0, true); // turn on
+    }
+    String responseTopic = String(topic);
+    responseTopic.replace("request", "response");
+    client.publish(responseTopic.c_str(), get_gpio_status().c_str());
+    client.publish("v1/devices/me/telemetry", get_gpio_status().c_str());
+  }
+  else if (methodName.equals("WET2"))
+  {
+    if (params.equals("0")) { // turn off
+      WET2 = true;
+      set_gpio_status(1, false);    
+    }
+    else {
+      WET2 = false;
+      set_gpio_status(1, true); // turn on
+    }
+    String responseTopic = String(topic);
+    responseTopic.replace("request", "response");
+    client.publish(responseTopic.c_str(), get_gpio_status().c_str());
+    client.publish("v1/devices/me/telemetry", get_gpio_status().c_str());
+  }
+  else if (methodName.equals("WET3"))
+  {
+    if (params.equals("0")) { // turn off
+      WET3 = true;
+      set_gpio_status(2, false);    
+    }
+    else {
+      WET3 = false;
+      set_gpio_status(2, true); // turn on
+    }
+    String responseTopic = String(topic);
+    responseTopic.replace("request", "response");
+    client.publish(responseTopic.c_str(), get_gpio_status().c_str());
+    client.publish("v1/devices/me/telemetry", get_gpio_status().c_str());
+  }
+  else if (methodName.equals("WET4"))
+  {
+    if (params.equals("0")) { // turn off
+      WET4 = true;
+      set_gpio_status(3, false);    
+    }
+    else {
+      WET4 = false;
+      set_gpio_status(3, true); // turn on
+    }
+    String responseTopic = String(topic);
+    responseTopic.replace("request", "response");
+    client.publish(responseTopic.c_str(), get_gpio_status().c_str());
+    client.publish("v1/devices/me/telemetry", get_gpio_status().c_str());
+  }
+  else if (methodName.equals("turnOff")) // turn off
+  {
+    // Update GPIO status and reply
+    set_gpio_status(0, false);
+    set_gpio_status(1, false);
+    set_gpio_status(2, false);
+    set_gpio_status(3, false);
+    
     WET4 = true;
     WET3 = true;
     WET2 = true;
     WET1 = true;
+    
     
     String responseTopic = String(topic);
     responseTopic.replace("request", "response");
     client.publish(responseTopic.c_str(), get_gpio_status().c_str());
     client.publish("v1/devices/me/telemetry", get_gpio_status().c_str());
   }
-  else if (methodName.equals("turnOn")) 
+  else if (methodName.equals("turnOn")) // turn on
   {
     // Update GPIO status and reply
-    set_gpio_status(true);
+    set_gpio_status(0, true);
+    set_gpio_status(1, true);
+    set_gpio_status(2, true);
+    set_gpio_status(3, true);
+    
     WET4 = false;
     WET3 = false;
     WET2 = false;
     WET1 = false;
+    
     
     String responseTopic = String(topic);
     responseTopic.replace("request", "response");
@@ -4250,7 +4329,10 @@ String get_gpio_status() {
   // Prepare gpios JSON payload string
   StaticJsonBuffer<200> jsonBuffer;
   JsonObject& data = jsonBuffer.createObject();
-  data[String("ON")] = gpioState[0] ? true : false;
+  data[String("Relay0")] = gpioState[0] ? true : false;
+  data[String("Relay1")] = gpioState[1] ? true : false;
+  data[String("Relay2")] = gpioState[2] ? true : false;
+  data[String("Relay3")] = gpioState[3] ? true : false;
   
   char payload[256];
   data.printTo(payload, sizeof(payload));
@@ -4260,13 +4342,13 @@ String get_gpio_status() {
   return strPayload;
 }
 
-void set_gpio_status(bool enabled) {
+void set_gpio_status(int channel, bool enabled) {
   Serial.print("Set Relay state: ");
   Serial.println(enabled);
   // Output GPIOs state
   // digitalWrite(RELAY1, enabled ? HIGH : LOW);
   // Update GPIOs state
-  gpioState[0] = enabled;
+  gpioState[channel] = enabled;
 }
 
 void reconnect() 
