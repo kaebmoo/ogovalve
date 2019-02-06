@@ -4222,6 +4222,13 @@ void on_message(const char* topic, byte* payload, unsigned int length)
     String responseTopic = String(topic);
     responseTopic.replace("request", "response");
     client.publish(responseTopic.c_str(), get_gpio_status().c_str());
+  }
+  else if (methodName.equals("getRelayStatus")) {
+    // Reply with GPIO status
+    String responseTopic = String(topic);
+    responseTopic.replace("request", "response");
+    client.publish(responseTopic.c_str(), get_relay_status().c_str());
+    client.publish("v1/devices/me/telemetry", get_relay_status().c_str());
   } 
   else if (methodName.equals("WET1")) 
   {
@@ -4325,14 +4332,33 @@ void on_message(const char* topic, byte* payload, unsigned int length)
   
 }
 
+String get_relay_status() {
+  // Prepare gpios JSON payload string
+  StaticJsonBuffer<200> jsonBuffer;
+  JsonObject& data = jsonBuffer.createObject();
+  data[String("Relay1")] = digitalRead(RELAY1) ? true : false;
+  data[String("Relay2")] = digitalRead(RELAY2) ? true : false;
+  data[String("Relay3")] = digitalRead(RELAY3) ? true : false;
+  data[String("Relay4")] = digitalRead(RELAY4) ? true : false;
+  
+  
+  char payload[256];
+  data.printTo(payload, sizeof(payload));
+  String strPayload = String(payload);
+  Serial.print("Get gpio status: ");
+  Serial.println(strPayload);
+  return strPayload;
+}
+
 String get_gpio_status() {
   // Prepare gpios JSON payload string
   StaticJsonBuffer<200> jsonBuffer;
   JsonObject& data = jsonBuffer.createObject();
-  data[String("Relay0")] = gpioState[0] ? true : false;
-  data[String("Relay1")] = gpioState[1] ? true : false;
-  data[String("Relay2")] = gpioState[2] ? true : false;
-  data[String("Relay3")] = gpioState[3] ? true : false;
+  data[String("WET1")] = gpioState[0] ? true : false;
+  data[String("WET2")] = gpioState[1] ? true : false;
+  data[String("WET3")] = gpioState[2] ? true : false;
+  data[String("WET4")] = gpioState[3] ? true : false;
+  
   
   char payload[256];
   data.printTo(payload, sizeof(payload));
