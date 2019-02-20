@@ -82,8 +82,8 @@ float const LONGITUDE = 100.782217;
 #define PIN            D2
 Adafruit_NeoPixel pixels = Adafruit_NeoPixel(1, PIN, NEO_GRB + NEO_KHZ800);
 
-const int FW_VERSION = 4; // 20180410 20180504
-const char* LASTUPDATE = "2.20180410";
+const int FW_VERSION = 5; // 20180410 20180504 20190212
+const char* LASTUPDATE = "1.20190212";
 const char* firmwareUrlBase = "http://www.ogonan.com/ogoupdate/";
 #ifdef ONECHANNEL
 String firmwareName = "farmcontrol_blynk_netpie1ch.ino.d1_mini";
@@ -250,7 +250,7 @@ unsigned long previousMillis = 0;        // will store last time LED was updated
 // constants won't change:
 const long interval = 1000;           // interval at which to blink (milliseconds)
 int ledState = LOW;                   // ledState used to set the LED
-unsigned long lastMqttConnectionAttempt = 0;
+
 
 // check wifi status connected
 int wifi_connected = 1;
@@ -367,7 +367,7 @@ void setup()
   Serial.println(WiFi.localIP());
   wifi_connected = 0;
   #else
-  wifi_connected = wifiConnect();
+  wifi_connected = setupWifi();
   #endif
 
   // wifi_connected = WiFi.begin("Redmi", "12345678"); // WL_CONNECTED
@@ -898,7 +898,7 @@ void ondemandWiFi()
 }
 #endif
 
-int wifiConnect()
+int setupWifi()
 {
 
   WiFiManager wifiManager;
@@ -5556,17 +5556,10 @@ void set_gpio_status(int channel, bool enabled) {
   gpioState[channel] = enabled;
 }
 
-bool reconnect() 
+void reconnect() 
 {
   // Loop until we're reconnected
-  unsigned long now = millis();
-  
-  if (5000 > now - lastMqttConnectionAttempt) {
-    // Do not repeat within 1 sec.
-    return false;
-  }
-  
-  if (!client.connected()) {
+  while (!client.connected()) {
     status = WiFi.status();
     if ( status != WL_CONNECTED) {
       
@@ -5585,13 +5578,10 @@ bool reconnect()
       Serial.print( "[FAILED] [ rc = " );
       Serial.print( client.state() );
       Serial.println( " : retrying in 5 seconds]" );
-      lastMqttConnectionAttempt = now;
-      return false;
       // Wait 5 seconds before retrying
-      // delay( 5000 );
+      delay( 5000 );
     }
   }
-  return true;
 }
 
 #ifdef NETPIE
